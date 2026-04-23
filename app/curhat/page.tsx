@@ -13,7 +13,39 @@ const STORAGE_KEY = 'kenopia_history'
 const PIN_KEY = 'kenopia_pin'
 const GRATITUDE_KEY = 'kenopia_gratitude'
 
-// ── Web Speech API type declarations ────────────────────────────────────────
+/// ── Web Speech API type declarations ─────────────────────────────────────────
+interface SpeechRecognition extends EventTarget {
+  lang: string
+  interimResults: boolean
+  maxAlternatives: number
+  continuous: boolean
+
+  start(): void
+  stop(): void
+  abort(): void
+
+  onresult: (event: SpeechRecognitionEvent) => void
+  onerror: (event: SpeechRecognitionErrorEvent) => void
+  onend: () => void
+  onstart: () => void
+}
+
+interface SpeechRecognitionEvent extends Event {
+  resultIndex: number
+  results: SpeechRecognitionResultList
+}
+
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition: new () => SpeechRecognition
+    webkitSpeechRecognition: new () => SpeechRecognition
+  }
+}
+
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 function ThemeToggle({ dark, toggle }: { dark: boolean; toggle: () => void }) {
