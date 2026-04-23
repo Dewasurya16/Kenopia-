@@ -1,11 +1,16 @@
 interface SpeechRecognition extends EventTarget {
   start(): void
   stop(): void
+  abort(): void   // ← TAMBAHKAN INI
   onresult: (event: any) => void
   onerror: (event: any) => void
 }
 
-interface Window {
-  SpeechRecognition: new () => SpeechRecognition
-  webkitSpeechRecognition: new () => SpeechRecognition
+declare global {
+  interface Window {
+    SpeechRecognition: new () => SpeechRecognition
+    webkitSpeechRecognition: new () => SpeechRecognition
+  }
 }
+
+export {}
