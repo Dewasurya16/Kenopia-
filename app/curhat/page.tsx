@@ -492,9 +492,20 @@ export default function CurhatPage() {
   }
 
   const toggleVoice = () => {
-    if (isListening) { recognitionRef.current?.stop(); setIsListening(false); setVoiceHint(null); return }
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-    if (!SpeechRecognition) return
+  if (isListening) { 
+    recognitionRef.current?.stop(); 
+    setIsListening(false); 
+    setVoiceHint(null); 
+    return; 
+  }
+
+  // Gunakan type assertion (as any) untuk mengakses window secara dinamis
+  const SpeechRecognition = 
+    (window as any).SpeechRecognition || 
+    (window as any).webkitSpeechRecognition;
+
+  if (!SpeechRecognition) return;
+
     const recognition = new SpeechRecognition()
     recognition.lang = 'id-ID'; recognition.interimResults = true; recognition.maxAlternatives = 1; recognition.continuous = false
     recognitionRef.current = recognition
