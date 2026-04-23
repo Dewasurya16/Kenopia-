@@ -39,13 +39,6 @@ interface SpeechRecognitionErrorEvent extends Event {
   error: string
 }
 
-declare global {
-  interface Window {
-    SpeechRecognition: new () => SpeechRecognition
-    webkitSpeechRecognition: new () => SpeechRecognition
-  }
-}
-
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 function ThemeToggle({ dark, toggle }: { dark: boolean; toggle: () => void }) {
@@ -397,7 +390,9 @@ export default function CurhatPage() {
       if (grat) setGratitudes(JSON.parse(grat))
     } catch { /* ignore */ }
 
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+   const SpeechRecognition =
+  (window as any).SpeechRecognition ||
+  (window as any).webkitSpeechRecognition
     setVoiceSupported(!!SpeechRecognition)
 
     setMounted(true)
