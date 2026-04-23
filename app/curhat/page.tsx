@@ -13,14 +13,7 @@ const STORAGE_KEY = 'kenopia_history'
 const PIN_KEY = 'kenopia_pin'
 const GRATITUDE_KEY = 'kenopia_gratitude'
 
-// ── Web Speech API type declarations ─────────────────────────────────────────
-declare global {
-  interface Window {
-    SpeechRecognition: new () => SpeechRecognition
-    webkitSpeechRecognition: new () => SpeechRecognition
-  }
-}
-
+// ── Web Speech API type declarations ────────────────────────────────────────
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 function ThemeToggle({ dark, toggle }: { dark: boolean; toggle: () => void }) {
