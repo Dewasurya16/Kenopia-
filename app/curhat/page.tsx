@@ -9,13 +9,13 @@ import html2canvas from 'html2canvas'
 
 const EmotionChart = dynamic(() => import('@/components/EmotionChart'), { ssr: false })
 
-// KEYS UNTUK LOCAL STORAGE
 const SESSION_STORAGE_KEY = 'kenopia_sessions_v2'
 const PIN_KEY = 'kenopia_pin'
 const GRATITUDE_KEY = 'kenopia_gratitude'
 const NAME_KEY = 'kenopia_username'
 
-/// ── Type Definitions ─────────────────────────────────────────
+// ── Type Definitions ──────────────────────────────────────────────────────────
+
 interface ChatSession {
   id: string
   title: string
@@ -26,7 +26,8 @@ interface ChatSession {
 interface SpeechRecognition extends EventTarget {
   lang: string; interimResults: boolean; maxAlternatives: number; continuous: boolean;
   start(): void; stop(): void; abort(): void;
-  onresult: (event: SpeechRecognitionEvent) => void; onerror: (event: SpeechRecognitionErrorEvent) => void;
+  onresult: (event: SpeechRecognitionEvent) => void;
+  onerror: (event: SpeechRecognitionErrorEvent) => void;
   onend: () => void; onstart: () => void;
 }
 interface SpeechRecognitionEvent extends Event { resultIndex: number; results: SpeechRecognitionResultList; }
@@ -54,7 +55,7 @@ function EmotionBadge({ emotion }: { emotion: EmotionKey }) {
       className="mx-auto my-3 px-5 py-2 rounded-full text-xs font-bold flex items-center gap-2 shadow-sm animate-slide-up"
       style={{ background: meta.bgLight, color: meta.color, border: `1.5px dashed ${meta.color}50` }}
     >
-      <span className="text-base drop-shadow-sm">{meta.emoji}</span> 
+      <span className="text-base drop-shadow-sm">{meta.emoji}</span>
       <span className="tracking-wide uppercase">{meta.label} terdeteksi</span>
     </div>
   )
@@ -66,13 +67,11 @@ function TypingIndicator() {
       <div
         className="w-10 h-10 rounded-full flex items-center justify-center text-[15px] flex-shrink-0 font-bold text-white shadow-lg"
         style={{ background: 'linear-gradient(135deg, #3b82f6, #ec4899)' }}
-      >
-        K
-      </div>
+      >K</div>
       <div className="bubble-ai-cute px-6 py-4 flex items-center gap-2 h-14">
-        <div className="typing-dot bg-blue-500 w-2.5 h-2.5 rounded-full animate-bounce shadow-sm" style={{ animationDelay: '0ms' }} />
-        <div className="typing-dot bg-blue-500 w-2.5 h-2.5 rounded-full animate-bounce shadow-sm" style={{ animationDelay: '150ms' }} />
-        <div className="typing-dot bg-blue-500 w-2.5 h-2.5 rounded-full animate-bounce shadow-sm" style={{ animationDelay: '300ms' }} />
+        <div className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-bounce shadow-sm" style={{ animationDelay: '0ms' }} />
+        <div className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-bounce shadow-sm" style={{ animationDelay: '150ms' }} />
+        <div className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-bounce shadow-sm" style={{ animationDelay: '300ms' }} />
       </div>
     </div>
   )
@@ -83,9 +82,7 @@ function PendingUserBubble({ text }: { text: string }) {
     <div className="flex flex-col gap-2 animate-slide-up mb-6">
       <div className="flex justify-end">
         <div className="max-w-[85%] sm:max-w-[75%]">
-          <div className="bubble-user-cute px-6 py-4 text-[15px] leading-relaxed opacity-70">
-            {text}
-          </div>
+          <div className="bubble-user-cute px-6 py-4 text-[15px] leading-relaxed opacity-70">{text}</div>
           <p className="text-right text-xs mt-2 font-medium flex items-center justify-end gap-1" style={{ color: 'var(--text-faint)' }}>
             <span className="animate-pulse">⏳</span> Mengirim...
           </p>
@@ -101,9 +98,7 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
     <div className="flex flex-col gap-3 animate-slide-up mb-4 group">
       <div className="flex justify-end">
         <div className="max-w-[85%] sm:max-w-[75%]">
-          <div className="bubble-user-cute px-6 py-4 text-[15px] leading-relaxed shadow-md">
-            {msg.userMessage}
-          </div>
+          <div className="bubble-user-cute px-6 py-4 text-[15px] leading-relaxed shadow-md">{msg.userMessage}</div>
           <p className="text-right text-[11px] mt-2 font-semibold tracking-wider opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: 'var(--text-faint)' }}>{timeStr}</p>
         </div>
       </div>
@@ -112,9 +107,7 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
         <div
           className="w-10 h-10 rounded-full flex items-center justify-center text-[15px] flex-shrink-0 font-bold text-white shadow-lg"
           style={{ background: 'linear-gradient(135deg, #3b82f6, #ec4899)' }}
-        >
-          K
-        </div>
+        >K</div>
         <div className="max-w-[85%] sm:max-w-[75%]">
           <div className="bubble-ai-cute px-6 py-4 text-[15px] leading-relaxed whitespace-pre-wrap shadow-sm border border-transparent hover:border-blue-100 dark:hover:border-blue-900/30 transition-colors">
             {msg.aiResponse}
@@ -130,15 +123,11 @@ function HistoryItem({ session, active, onClick }: { session: ChatSession; activ
   const lastMsg = session.messages[session.messages.length - 1]
   const meta = lastMsg ? EMOTIONS[lastMsg.emotion] : EMOTIONS['sedih']
   const label = new Date(session.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
-  
   return (
     <button
       onClick={onClick}
       className={`w-full text-left px-4 py-3.5 rounded-[20px] transition-all duration-300 ${active ? 'shadow-md scale-[1.02]' : 'hover:bg-black/5 dark:hover:bg-white/5 hover:scale-[1.01]'}`}
-      style={{
-        background: active ? 'var(--surface-2)' : 'transparent',
-        border: `1px solid ${active ? 'var(--border-2)' : 'transparent'}`,
-      }}
+      style={{ background: active ? 'var(--surface-2)' : 'transparent', border: `1px solid ${active ? 'var(--border-2)' : 'transparent'}` }}
     >
       <div className="flex items-center gap-2.5 mb-2">
         <span className="text-xl drop-shadow-sm">{meta.emoji}</span>
@@ -159,29 +148,20 @@ function EmotionCalendar({ messages }: { messages: ChatMessage[] }) {
       days[date][msg.emotion]++
     })
     return Object.entries(days).map(([date, counts]) => {
-      let dominant: EmotionKey = 'senang'
-      let max = 0
-      ;(Object.keys(counts) as EmotionKey[]).forEach(key => {
-        if (counts[key] > max) { max = counts[key]; dominant = key }
-      })
+      let dominant: EmotionKey = 'senang'; let max = 0
+      ;(Object.keys(counts) as EmotionKey[]).forEach(key => { if (counts[key] > max) { max = counts[key]; dominant = key } })
       return { date, dominant }
     })
   }, [messages])
-
   return (
     <div className="mt-6 pt-6" style={{ borderTop: '1px dashed var(--border-2)' }}>
-      <p className="text-[12px] font-bold uppercase tracking-widest mb-4" style={{ color: 'var(--text-faint)' }}>
-        Jejak Emosimu
-      </p>
+      <p className="text-[12px] font-bold uppercase tracking-widest mb-4" style={{ color: 'var(--text-faint)' }}>Jejak Emosimu</p>
       <div className="flex flex-wrap gap-2.5">
         {groupedData.length === 0 && <p className="text-[13px] italic" style={{ color: 'var(--text-faint)' }}>Belum ada data perjalanan.</p>}
         {groupedData.map((day, i) => (
-          <div
-            key={i}
-            className="w-7 h-7 rounded-[10px] cursor-help transition-all duration-300 hover:scale-125 hover:rotate-6 shadow-sm hover:shadow-md"
+          <div key={i} className="w-7 h-7 rounded-[10px] cursor-help transition-all duration-300 hover:scale-125 hover:rotate-6 shadow-sm hover:shadow-md"
             style={{ background: EMOTIONS[day.dominant].color, opacity: 0.9 }}
-            title={`${day.date}: Dominan ${EMOTIONS[day.dominant].label}`}
-          />
+            title={`${day.date}: Dominan ${EMOTIONS[day.dominant].label}`} />
         ))}
       </div>
     </div>
@@ -191,13 +171,13 @@ function EmotionCalendar({ messages }: { messages: ChatMessage[] }) {
 function BreathingOverlay({ onClose }: { onClose: () => void }) {
   const [phase, setPhase] = useState<'Tarik Napas...' | 'Buang Napas...'>('Tarik Napas...')
   useEffect(() => {
-    const interval = setInterval(() => { setPhase(p => p === 'Tarik Napas...' ? 'Buang Napas...' : 'Tarik Napas...') }, 4000) 
+    const interval = setInterval(() => { setPhase(p => p === 'Tarik Napas...' ? 'Buang Napas...' : 'Tarik Napas...') }, 4000)
     return () => clearInterval(interval)
   }, [])
   return (
     <div className="fixed inset-0 z-[100] bg-[#030305]/90 backdrop-blur-xl flex flex-col items-center justify-center animate-fade-in">
       <h2 className="text-white text-3xl md:text-4xl font-display font-bold mb-20 tracking-wide text-center px-4">Tenangkan Pikiran Sejenak</h2>
-      <div className="w-64 h-64 md:w-80 md:h-80 rounded-full flex items-center justify-center shadow-[0_0_100px_rgba(14,165,233,0.4)]"
+      <div className="w-64 h-64 md:w-80 md:h-80 rounded-full flex items-center justify-center"
         style={{ background: 'radial-gradient(circle, #7dd3fc, #0ea5e9)', transition: 'transform 4s ease-in-out, box-shadow 4s ease-in-out', transform: phase === 'Tarik Napas...' ? 'scale(1.3)' : 'scale(0.8)', boxShadow: phase === 'Tarik Napas...' ? '0 0 120px rgba(14,165,233,0.6)' : '0 0 40px rgba(14,165,233,0.2)' }}>
         <span className="text-white font-bold text-2xl md:text-3xl drop-shadow-lg tracking-widest">{phase}</span>
       </div>
@@ -215,20 +195,20 @@ function BurnBebanOverlay({ onClose }: { onClose: () => void }) {
   }
   return (
     <div className={`fixed inset-0 z-[100] backdrop-blur-xl flex flex-col items-center justify-center p-6 transition-all duration-1000 ${phase !== 'idle' ? 'bg-red-950/95' : 'bg-black/80'}`}>
-      <style dangerouslySetInnerHTML={{__html: `@keyframes burnShake { 0% { transform: translate(1px, 1px) rotate(0deg); } 10% { transform: translate(-2px, -3px) rotate(-1deg); } 20% { transform: translate(-4px, 0px) rotate(1deg); } 30% { transform: translate(4px, 3px) rotate(0deg); } 40% { transform: translate(2px, -2px) rotate(2deg); } 50% { transform: translate(-2px, 3px) rotate(-1deg); } 60% { transform: translate(-4px, 1px) rotate(0deg); } 70% { transform: translate(4px, 2px) rotate(-2deg); } 80% { transform: translate(-2px, -2px) rotate(1deg); } 90% { transform: translate(2px, 3px) rotate(0deg); } 100% { transform: translate(1px, -3px) rotate(-1deg); } } @keyframes ashFly { 0% { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); filter: blur(0px) brightness(1.5) sepia(1) hue-rotate(-50deg) saturate(5); color: #ffeb3b; } 40% { opacity: 0.8; transform: translateY(-40px) scale(1.05) rotate(2deg); filter: blur(4px) brightness(0.8) sepia(0); color: #ea580c; } 100% { opacity: 0; transform: translateY(-150px) scale(1.1) rotate(-2deg); filter: blur(15px) brightness(0.2); color: #111827; letter-spacing: 10px; } } .burn-ignite { animation: burnShake 0.3s infinite; box-shadow: 0 0 80px #ef4444, inset 0 0 40px #ef4444 !important; border-color: #fca5a5 !important; color: #fef08a !important; background: rgba(153, 27, 27, 0.5) !important; text-shadow: 0 0 15px #ef4444, 0 0 25px #f97316; } .burn-dissolve { animation: ashFly 1.2s forwards cubic-bezier(0.4, 0, 0.2, 1); }`}} />
-      {phase === 'idle' || phase === 'igniting' || phase === 'dissolving' ? (
+      <style dangerouslySetInnerHTML={{__html: `@keyframes burnShake{0%{transform:translate(1px,1px) rotate(0deg)}10%{transform:translate(-2px,-3px) rotate(-1deg)}20%{transform:translate(-4px,0px) rotate(1deg)}30%{transform:translate(4px,3px) rotate(0deg)}40%{transform:translate(2px,-2px) rotate(2deg)}50%{transform:translate(-2px,3px) rotate(-1deg)}60%{transform:translate(-4px,1px) rotate(0deg)}70%{transform:translate(4px,2px) rotate(-2deg)}80%{transform:translate(-2px,-2px) rotate(1deg)}90%{transform:translate(2px,3px) rotate(0deg)}100%{transform:translate(1px,-3px) rotate(-1deg)}}@keyframes ashFly{0%{opacity:1;transform:translateY(0) scale(1) rotate(0deg);filter:blur(0px) brightness(1.5) sepia(1) hue-rotate(-50deg) saturate(5);color:#ffeb3b}40%{opacity:.8;transform:translateY(-40px) scale(1.05) rotate(2deg);filter:blur(4px) brightness(.8) sepia(0);color:#ea580c}100%{opacity:0;transform:translateY(-150px) scale(1.1) rotate(-2deg);filter:blur(15px) brightness(.2);color:#111827;letter-spacing:10px}}.burn-ignite{animation:burnShake .3s infinite;box-shadow:0 0 80px #ef4444,inset 0 0 40px #ef4444!important;border-color:#fca5a5!important;color:#fef08a!important;background:rgba(153,27,27,.5)!important;text-shadow:0 0 15px #ef4444,0 0 25px #f97316}.burn-dissolve{animation:ashFly 1.2s forwards cubic-bezier(.4,0,.2,1)}`}} />
+      {phase !== 'done' ? (
         <div className="w-full max-w-xl flex flex-col items-center">
           <div className={`text-6xl md:text-7xl mb-6 transition-all duration-500 ${phase === 'igniting' ? 'scale-[2] drop-shadow-[0_0_30px_rgba(239,68,68,1)]' : ''}`}>{phase === 'igniting' ? '🔥' : '🌬️'}</div>
           <h2 className={`text-3xl md:text-4xl font-display font-bold mb-3 text-center transition-all ${phase !== 'idle' ? 'text-red-400 scale-110' : 'text-white'}`}>{phase === 'igniting' ? 'Membakar Emosimu...' : 'Ruang Lepas Beban'}</h2>
-          <p className={`text-[15px] md:text-[16px] text-center mb-10 transition-all leading-relaxed ${phase !== 'idle' ? 'opacity-0' : 'text-gray-300'}`}>Ketikkan semua amarah, kekesalan, atau kesedihan terdalammu di sini.<br/>Teks akan <strong>dibakar hingga hangus</strong> dan tidak akan pernah disimpan.</p>
-          <textarea className={`w-full p-6 md:p-8 rounded-[32px] border-2 transition-all duration-300 outline-none text-[16px] leading-relaxed resize-none shadow-2xl ${phase === 'idle' ? 'bg-white/10 text-white placeholder-gray-400 border-white/20 focus:border-red-500/50 focus:bg-white/20' : ''} ${phase === 'igniting' ? 'burn-ignite' : ''} ${phase === 'dissolving' ? 'burn-dissolve' : ''}`} rows={7} placeholder="Keluarkan semua caci maki dan amarahmu di sini. Tidak ada yang akan tahu..." value={text} onChange={(e) => setText(e.target.value)} disabled={phase !== 'idle'} />
+          <p className={`text-[15px] md:text-[16px] text-center mb-10 transition-all leading-relaxed ${phase !== 'idle' ? 'opacity-0' : 'text-gray-300'}`}>Ketikkan semua amarah, kekesalan, atau kesedihan terdalammu di sini.<br />Teks akan <strong>dibakar hingga hangus</strong> dan tidak akan pernah disimpan.</p>
+          <textarea className={`w-full p-6 md:p-8 rounded-[32px] border-2 transition-all duration-300 outline-none text-[16px] leading-relaxed resize-none shadow-2xl ${phase === 'idle' ? 'bg-white/10 text-white placeholder-gray-400 border-white/20 focus:border-red-500/50 focus:bg-white/20' : ''} ${phase === 'igniting' ? 'burn-ignite' : ''} ${phase === 'dissolving' ? 'burn-dissolve' : ''}`}
+            rows={7} placeholder="Keluarkan semua caci maki dan amarahmu di sini. Tidak ada yang akan tahu..." value={text} onChange={e => setText(e.target.value)} disabled={phase !== 'idle'} />
           <div className={`flex gap-4 mt-8 w-full transition-all duration-300 ${phase !== 'idle' ? 'opacity-0 scale-90 pointer-events-none' : 'opacity-100'}`}>
             <button onClick={onClose} className="flex-1 py-4 md:py-5 rounded-2xl text-gray-300 bg-white/10 hover:bg-white/20 transition-all font-bold text-[15px] border border-white/10 hover:scale-[1.02] active:scale-95">Batal</button>
-            <button onClick={handleBurn} disabled={!text} className="flex-1 py-4 md:py-5 rounded-2xl text-white font-bold text-[15px] transition-all disabled:opacity-50 disabled:hover:scale-100 hover:scale-[1.02] active:scale-95 shadow-[0_10px_40px_rgba(239,68,68,0.4)] border border-red-400/50" style={{ background: 'linear-gradient(135deg, #ef4444, #f97316)' }}>🔥 Bakar & Hancurkan!</button>
+            <button onClick={handleBurn} disabled={!text} className="flex-1 py-4 md:py-5 rounded-2xl text-white font-bold text-[15px] transition-all disabled:opacity-50 hover:scale-[1.02] active:scale-95 shadow-[0_10px_40px_rgba(239,68,68,0.4)] border border-red-400/50" style={{ background: 'linear-gradient(135deg,#ef4444,#f97316)' }}>🔥 Bakar & Hancurkan!</button>
           </div>
         </div>
-      ) : null}
-      {phase === 'done' && (
+      ) : (
         <div className="flex flex-col items-center justify-center animate-slide-up">
           <div className="w-32 h-32 bg-green-500/20 rounded-full flex items-center justify-center mb-8 shadow-[0_0_80px_rgba(34,197,94,0.4)] border border-green-500/40"><span className="text-7xl">🍃</span></div>
           <h2 className="text-4xl md:text-5xl font-display font-bold text-white mb-6 tracking-wide">Sudah Berlalu</h2>
@@ -239,37 +219,38 @@ function BurnBebanOverlay({ onClose }: { onClose: () => void }) {
   )
 }
 
-function MicButton({ isListening, onClick, disabled }: { isListening: boolean, onClick: () => void, disabled: boolean }) {
+function MicButton({ isListening, onClick, disabled }: { isListening: boolean; onClick: () => void; disabled: boolean }) {
   return (
-    <button onClick={onClick} disabled={disabled} className="relative w-[52px] h-[52px] rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300 shadow-sm hover:shadow-md hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100" style={{ background: isListening ? 'linear-gradient(135deg, #ef4444, #f97316)' : 'var(--surface-2)', border: `1px solid ${isListening ? '#ef444460' : 'var(--border-2)'}`, color: isListening ? 'white' : 'var(--text-muted)' }} aria-label={isListening ? 'Hentikan rekaman' : 'Bicara'}>
+    <button onClick={onClick} disabled={disabled}
+      className="relative w-[52px] h-[52px] rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300 shadow-sm hover:shadow-md hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
+      style={{ background: isListening ? 'linear-gradient(135deg,#ef4444,#f97316)' : 'var(--surface-2)', border: `1px solid ${isListening ? '#ef444460' : 'var(--border-2)'}`, color: isListening ? 'white' : 'var(--text-muted)' }}
+      aria-label={isListening ? 'Hentikan rekaman' : 'Bicara'}
+    >
       {isListening && (<><span className="absolute inset-0 rounded-full animate-ping" style={{ background: 'rgba(239,68,68,0.5)', animationDuration: '1.5s' }} /><span className="absolute inset-0 rounded-full" style={{ background: 'rgba(239,68,68,0.2)' }} /></>)}
       <span className="relative text-2xl drop-shadow-sm">{isListening ? '⏹' : '🎤'}</span>
     </button>
   )
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
+// ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function CurhatPage() {
   const [dark, setDark] = useState(false)
   const [mounted, setMounted] = useState(false)
-  
-  // State User Name
+
   const [userName, setUserName] = useState<string>('')
   const [showNameModal, setShowNameModal] = useState<boolean>(false)
   const [tempName, setTempName] = useState<string>('')
 
-  // State Sessions
   const [sessions, setSessions] = useState<ChatSession[]>([])
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
-  
+
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [pendingText, setPendingText] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  
-  // Modals state
+
   const [showStats, setShowStats] = useState(false)
   const [showBreathing, setShowBreathing] = useState(false)
   const [showBurnOverlay, setShowBurnOverlay] = useState(false)
@@ -277,12 +258,12 @@ export default function CurhatPage() {
   const [showPinSetup, setShowPinSetup] = useState(false)
   const [showGratitude, setShowGratitude] = useState(false)
   const [showInsight, setShowInsight] = useState(false)
+  const [showMobileMenu, setShowMobileMenu] = useState(false)
 
-  // Extra Features State
   const [savedPin, setSavedPin] = useState<string | null>(null)
   const [isLocked, setIsLocked] = useState(false)
   const [pinInput, setPinInput] = useState('')
-  const [gratitudes, setGratitudes] = useState<{id:string, text:string, date:string}[]>([])
+  const [gratitudes, setGratitudes] = useState<{ id: string; text: string; date: string }[]>([])
   const [newGratitude, setNewGratitude] = useState('')
   const [insightData, setInsightData] = useState<string | null>(null)
   const [loadingInsight, setLoadingInsight] = useState(false)
@@ -291,7 +272,6 @@ export default function CurhatPage() {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [persona, setPersona] = useState<'sahabat' | 'psikolog' | 'filsuf'>('sahabat')
 
-  // Voice state
   const [isListening, setIsListening] = useState(false)
   const [voiceSupported, setVoiceSupported] = useState(false)
   const [voiceHint, setVoiceHint] = useState<string | null>(null)
@@ -299,22 +279,16 @@ export default function CurhatPage() {
 
   const chatEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const exportRef = useRef<HTMLDivElement>(null) 
+  const exportRef = useRef<HTMLDivElement>(null)
+  const mobileMenuRef = useRef<HTMLDivElement>(null)
 
-  // Derived States
-  const activeMessages = useMemo(() => {
-    return sessions.find(s => s.id === activeSessionId)?.messages || []
-  }, [sessions, activeSessionId])
-
-  const allMessages = useMemo(() => {
-    return sessions.flatMap(s => s.messages)
-  }, [sessions])
-
+  const activeMessages = useMemo(() => sessions.find(s => s.id === activeSessionId)?.messages || [], [sessions, activeSessionId])
+  const allMessages = useMemo(() => sessions.flatMap(s => s.messages), [sessions])
   const dominantEmotion = useMemo(() => {
-    if (!allMessages.length) return 'sedih'
+    if (!allMessages.length) return 'sedih' as EmotionKey
     const counts: Record<EmotionKey, number> = { senang: 0, cinta: 0, marah: 0, takut: 0, sedih: 0 }
     allMessages.forEach(m => counts[m.emotion]++)
-    return (Object.entries(counts).sort((a,b) => b[1]-a[1])[0][0]) as EmotionKey
+    return (Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0]) as EmotionKey
   }, [allMessages])
 
   useEffect(() => {
@@ -322,34 +296,34 @@ export default function CurhatPage() {
     const isDark = savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)
     setDark(isDark)
     document.documentElement.classList.toggle('dark', isDark)
-
     try {
-      // Load User Name
       const savedName = localStorage.getItem(NAME_KEY)
-      if (savedName) {
-        setUserName(savedName)
-      } else {
-        setShowNameModal(true)
-      }
-
-      // Load Sessions
+      if (savedName) { setUserName(savedName) } else { setShowNameModal(true) }
       const storedSessions = localStorage.getItem(SESSION_STORAGE_KEY)
       if (storedSessions) {
         const parsed: ChatSession[] = JSON.parse(storedSessions)
         setSessions(parsed)
         if (parsed.length > 0) setActiveSessionId(parsed[parsed.length - 1].id)
       }
-      
       const pin = localStorage.getItem(PIN_KEY)
-      if (pin) { setSavedPin(pin); setIsLocked(true); }
-      
+      if (pin) { setSavedPin(pin); setIsLocked(true) }
       const grat = localStorage.getItem(GRATITUDE_KEY)
       if (grat) setGratitudes(JSON.parse(grat))
     } catch { /* ignore */ }
-
-   const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     setVoiceSupported(!!SpeechRecognition)
     setMounted(true)
+  }, [])
+
+  // Close mobile menu on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target as Node)) {
+        setShowMobileMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
   }, [])
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [activeMessages, loading, pendingText])
@@ -395,30 +369,27 @@ export default function CurhatPage() {
       const canvas = await html2canvas(exportRef.current, { backgroundColor: dark ? '#0f172a' : '#f8fafc', scale: 2 })
       const link = document.createElement('a')
       link.href = canvas.toDataURL('image/png')
-      link.download = `Kenopia-Wrapped-${new Date().toISOString().slice(0,10)}.png`
+      link.download = `Kenopia-Wrapped-${new Date().toISOString().slice(0, 10)}.png`
       link.click()
-    } catch (err) { alert('Gagal mengekspor jurnal.') }
+    } catch { alert('Gagal mengekspor jurnal.') }
   }
 
   const addGratitude = () => {
-    if(!newGratitude) return
-    const updated = [{id: uuidv4(), text: newGratitude, date: new Date().toISOString()}, ...gratitudes]
+    if (!newGratitude) return
+    const updated = [{ id: uuidv4(), text: newGratitude, date: new Date().toISOString() }, ...gratitudes]
     setGratitudes(updated)
     localStorage.setItem(GRATITUDE_KEY, JSON.stringify(updated))
     setNewGratitude('')
   }
 
   const fetchInsight = async () => {
-    if(allMessages.length === 0) return
+    if (allMessages.length === 0) return
     setLoadingInsight(true)
     try {
-      const res = await fetch('/api/insight', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ history: allMessages.slice(-10) }) 
-      })
+      const res = await fetch('/api/insight', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ history: allMessages.slice(-10) }) })
       const data = await res.json()
       setInsightData(data.insight)
-    } catch(e) { setInsightData("Gagal menarik analisis AI.") }
+    } catch { setInsightData('Gagal menarik analisis AI.') }
     setLoadingInsight(false)
   }
 
@@ -433,10 +404,9 @@ export default function CurhatPage() {
   }
 
   const toggleVoice = () => {
-    if (isListening) { recognitionRef.current?.stop(); setIsListening(false); setVoiceHint(null); return; }
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
-
+    if (isListening) { recognitionRef.current?.stop(); setIsListening(false); setVoiceHint(null); return }
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SpeechRecognition) return
     const recognition = new SpeechRecognition()
     recognition.lang = 'id-ID'; recognition.interimResults = true; recognition.maxAlternatives = 1; recognition.continuous = false
     recognitionRef.current = recognition
@@ -455,7 +425,7 @@ export default function CurhatPage() {
     }
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
       setIsListening(false); setVoiceHint(null)
-      if (event.error === 'not-allowed') { setError('Izin mikrofon ditolak. Aktifkan akses mikrofon di browser.') } 
+      if (event.error === 'not-allowed') { setError('Izin mikrofon ditolak. Aktifkan akses mikrofon di browser.') }
       else if (event.error === 'no-speech') { setVoiceHint('Tidak ada suara. Coba lagi.'); setTimeout(() => setVoiceHint(null), 3000) }
     }
     recognition.onend = () => { setIsListening(false); setTimeout(() => setVoiceHint(null), 2000); textareaRef.current?.focus() }
@@ -466,115 +436,105 @@ export default function CurhatPage() {
     if (isListening) { recognitionRef.current?.stop(); setIsListening(false) }
     const text = input.replace(/\s*\[.*?\]$/, '').trim()
     if (!text || loading) return
-
     setInput(''); setError(null); setVoiceHint(null); setPendingText(text); setLoading(true)
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
-
     const recentContext = activeMessages.slice(-4).map(h => ({ user: h.userMessage, ai: h.aiResponse }))
-
     try {
-      const res = await fetch('/api/analyze', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, context: recentContext, persona: persona, userName: userName }),
-      })
-
+      const res = await fetch('/api/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: text, context: recentContext, persona, userName }) })
       const rawText = await res.text()
       let data: AnalyzeResponse
       try { data = JSON.parse(rawText) } catch { throw new Error('Respons server tidak valid. Coba lagi.') }
       if (!res.ok) { throw new Error((data as { error?: string }).error || 'Terjadi kesalahan.') }
-
       const newMsg: ChatMessage = { id: uuidv4(), userMessage: text, emotion: data.emotion, aiResponse: data.aiResponse, timestamp: data.timestamp }
-      
-      let updatedSessions = [...sessions];
+      let updatedSessions = [...sessions]
       if (activeSessionId) {
-        updatedSessions = updatedSessions.map(s => 
-          s.id === activeSessionId ? { ...s, messages: [...s.messages, newMsg] } : s
-        )
+        updatedSessions = updatedSessions.map(s => s.id === activeSessionId ? { ...s, messages: [...s.messages, newMsg] } : s)
       } else {
-        const newSessionId = uuidv4();
-        const words = text.split(' ');
-        const sessionTitle = words.length > 5 ? words.slice(0, 5).join(' ') + '...' : text;
-
-        updatedSessions.push({
-          id: newSessionId,
-          title: sessionTitle,
-          createdAt: new Date().toISOString(),
-          messages: [newMsg]
-        });
-        setActiveSessionId(newSessionId);
+        const newSessionId = uuidv4()
+        const words = text.split(' ')
+        const sessionTitle = words.length > 5 ? words.slice(0, 5).join(' ') + '...' : text
+        updatedSessions.push({ id: newSessionId, title: sessionTitle, createdAt: new Date().toISOString(), messages: [newMsg] })
+        setActiveSessionId(newSessionId)
       }
-
       saveSessions(updatedSessions)
-    } catch (e) { setError(e instanceof Error ? e.message : 'Terjadi kesalahan. Coba lagi ya.') } 
+    } catch (e) { setError(e instanceof Error ? e.message : 'Terjadi kesalahan. Coba lagi ya.') }
     finally { setPendingText(null); setLoading(false) }
   }
 
   if (!mounted) return null
 
-  // ── ONBOARDING NAMA UI ──
+  // ── ONBOARDING NAMA ────────────────────────────────────────────────────────
   if (showNameModal && !isLocked) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#030305]/95 text-white flex-col relative overflow-hidden font-sans">
         <div className="absolute inset-0 opacity-40 pointer-events-none" style={{ background: 'radial-gradient(circle at 50% 40%, rgba(59,130,246,0.2) 0%, transparent 60%)' }} />
         <div className="z-10 p-10 md:p-12 rounded-[40px] flex flex-col items-center w-[90%] max-w-[420px] relative animate-fade-in"
-             style={{ background: 'rgba(255, 255, 255, 0.05)', backdropFilter: 'blur(40px)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 40px 100px rgba(0,0,0,0.6)' }}>
+          style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(40px)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 40px 100px rgba(0,0,0,0.6)' }}>
           <div className="text-6xl mb-6 animate-bounce drop-shadow-[0_10px_20px_rgba(255,255,255,0.2)]">👋</div>
           <h2 className="text-3xl font-display font-bold mb-3 tracking-wide">Kenalan Dulu Yuk!</h2>
           <p className="text-[15px] text-gray-300 text-center mb-10 leading-relaxed">Agar Kenopia bisa mengenal dan memanggilmu dengan lebih akrab selayaknya teman.</p>
-          <input type="text" maxLength={20} placeholder="Nama Panggilanmu..." className="w-full text-center text-2xl font-bold p-5 bg-white/5 rounded-[24px] mb-8 outline-none border border-white/10 focus:border-blue-400 focus:ring-4 focus:ring-blue-500/20 transition-all text-white placeholder-gray-500 shadow-inner" value={tempName} onChange={(e) => setTempName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSaveName()} />
+          <input type="text" maxLength={20} placeholder="Nama Panggilanmu..."
+            className="w-full text-center text-2xl font-bold p-5 bg-white/5 rounded-[24px] mb-8 outline-none border border-white/10 focus:border-blue-400 focus:ring-4 focus:ring-blue-500/20 transition-all text-white placeholder-gray-500 shadow-inner"
+            value={tempName} onChange={e => setTempName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSaveName()} />
           <button onClick={handleSaveName} disabled={!tempName.trim()} className="w-full bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:hover:scale-100 text-white py-4 md:py-5 rounded-2xl font-bold text-[16px] transition-all hover:scale-105 active:scale-95 shadow-[0_10px_30px_rgba(59,130,246,0.3)]">Mulai Curhat ✨</button>
         </div>
       </div>
     )
   }
 
-  // ── LOCK SCREEN UI ──
+  // ── LOCK SCREEN ───────────────────────────────────────────────────────────
   if (isLocked) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#030305] text-white flex-col relative overflow-hidden font-sans">
         <div className="absolute inset-0 opacity-40 pointer-events-none" style={{ background: 'radial-gradient(circle at 50% 40%, rgba(59,130,246,0.25) 0%, transparent 60%)' }} />
-        <div className="z-10 p-10 md:p-12 rounded-[40px] flex flex-col items-center w-[90%] max-w-[400px] relative animate-fade-in" style={{ background: 'rgba(255, 255, 255, 0.04)', backdropFilter: 'blur(40px)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 40px 100px rgba(0,0,0,0.6)' }}>
-          <div className="w-24 h-24 rounded-full flex items-center justify-center text-5xl mb-6 shadow-[0_10px_30px_rgba(59,130,246,0.3)] border border-white/10" style={{ background: 'linear-gradient(135deg, rgba(59,130,246,0.2), rgba(236,72,153,0.2))' }}>🔒</div>
+        <div className="z-10 p-10 md:p-12 rounded-[40px] flex flex-col items-center w-[90%] max-w-[400px] relative animate-fade-in"
+          style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(40px)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 40px 100px rgba(0,0,0,0.6)' }}>
+          <div className="w-24 h-24 rounded-full flex items-center justify-center text-5xl mb-6 shadow-[0_10px_30px_rgba(59,130,246,0.3)] border border-white/10" style={{ background: 'linear-gradient(135deg,rgba(59,130,246,0.2),rgba(236,72,153,0.2))' }}>🔒</div>
           <h2 className="text-3xl font-display font-bold mb-8 tracking-wide">Area Pribadi</h2>
           <div className="flex gap-4 mb-10">
-            {[0,1,2,3].map(i => (<div key={i} className={`w-5 h-5 rounded-full transition-all duration-300 ${pinInput.length > i ? 'bg-blue-400 scale-125 shadow-[0_0_20px_rgba(96,165,250,0.8)]' : 'bg-white/15'}`} />))}
+            {[0, 1, 2, 3].map(i => (<div key={i} className={`w-5 h-5 rounded-full transition-all duration-300 ${pinInput.length > i ? 'bg-blue-400 scale-125 shadow-[0_0_20px_rgba(96,165,250,0.8)]' : 'bg-white/15'}`} />))}
           </div>
           <div className="grid grid-cols-3 gap-4 w-full">
-            {[1,2,3,4,5,6,7,8,9].map(n => (
-              <button key={n} onClick={() => { const newPin = pinInput + n; setPinInput(newPin); if(newPin.length === 4) { if(newPin === savedPin) { setIsLocked(false); setPinInput('') } else { setTimeout(() => setPinInput(''), 300); alert('PIN Salah') } } }} className="h-16 rounded-2xl bg-white/5 hover:bg-white/15 text-2xl font-bold transition-all hover:scale-105 active:scale-95 border border-white/5 hover:border-white/30 shadow-sm">{n}</button>
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
+              <button key={n} onClick={() => { const p = pinInput + n; setPinInput(p); if (p.length === 4) { if (p === savedPin) { setIsLocked(false); setPinInput('') } else { setTimeout(() => setPinInput(''), 300); alert('PIN Salah') } } }}
+                className="h-16 rounded-2xl bg-white/5 hover:bg-white/15 text-2xl font-bold transition-all hover:scale-105 active:scale-95 border border-white/5 hover:border-white/30 shadow-sm">{n}
+              </button>
             ))}
             <div />
-            <button onClick={() => { const newPin = pinInput + '0'; setPinInput(newPin); if(newPin.length === 4) { if(newPin === savedPin) { setIsLocked(false); setPinInput('') } else { setTimeout(() => setPinInput(''), 300); alert('PIN Salah') } } }} className="h-16 rounded-2xl bg-white/5 hover:bg-white/15 text-2xl font-bold transition-all hover:scale-105 active:scale-95 border border-white/5 hover:border-white/30 shadow-sm">0</button>
-            <button onClick={() => setPinInput(pinInput.slice(0,-1))} className="h-16 rounded-2xl text-2xl bg-red-500/10 hover:bg-red-500/25 text-red-400 transition-all hover:scale-105 active:scale-95 border border-red-500/20 hover:border-red-500/50 shadow-sm">⌫</button>
+            <button onClick={() => { const p = pinInput + '0'; setPinInput(p); if (p.length === 4) { if (p === savedPin) { setIsLocked(false); setPinInput('') } else { setTimeout(() => setPinInput(''), 300); alert('PIN Salah') } } }}
+              className="h-16 rounded-2xl bg-white/5 hover:bg-white/15 text-2xl font-bold transition-all hover:scale-105 active:scale-95 border border-white/5 hover:border-white/30 shadow-sm">0</button>
+            <button onClick={() => setPinInput(pinInput.slice(0, -1))} className="h-16 rounded-2xl text-2xl bg-red-500/10 hover:bg-red-500/25 text-red-400 transition-all hover:scale-105 active:scale-95 border border-red-500/20 hover:border-red-500/50 shadow-sm">⌫</button>
           </div>
         </div>
       </div>
     )
   }
 
+  // ── MAIN APP ──────────────────────────────────────────────────────────────
   return (
     <>
       <style>{`
-        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.3); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(156, 163, 175, 0.6); }
-
+        ::-webkit-scrollbar-thumb { background: rgba(156,163,175,0.25); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(156,163,175,0.5); }
         .bubble-ai-cute { background: var(--surface-2); border-radius: 24px 24px 24px 8px; color: var(--text); }
-        .bubble-user-cute { background: linear-gradient(135deg, #3b82f6, #0ea5e9); color: white; border-radius: 24px 24px 8px 24px; }
-
+        .bubble-user-cute { background: linear-gradient(135deg,#3b82f6,#0ea5e9); color: white; border-radius: 24px 24px 8px 24px; }
         .chat-input::-webkit-scrollbar { display: none; }
         .chat-input { -ms-overflow-style: none; scrollbar-width: none; }
+        @keyframes mobileMenuIn { from { opacity: 0; transform: translateY(-8px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        .mobile-menu-enter { animation: mobileMenuIn 0.18s ease-out forwards; }
       `}</style>
 
       <div className="flex h-screen overflow-hidden relative font-sans" style={{ background: 'var(--bg)' }}>
         {showBreathing && <BreathingOverlay onClose={() => setShowBreathing(false)} />}
         {showBurnOverlay && <BurnBebanOverlay onClose={() => setShowBurnOverlay(false)} />}
-        
+
+        {/* ── MODAL SOS ── */}
         {showSOS && (
           <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
             <div className="bg-white dark:bg-gray-800 p-8 rounded-[36px] max-w-sm w-full shadow-2xl relative border border-gray-100 dark:border-gray-700 animate-slide-up">
-              <button onClick={()=>setShowSOS(false)} className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 hover:scale-110 transition-all bg-gray-100 dark:bg-gray-700 w-9 h-9 rounded-full flex items-center justify-center">✕</button>
+              <button onClick={() => setShowSOS(false)} className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 hover:scale-110 transition-all bg-gray-100 dark:bg-gray-700 w-9 h-9 rounded-full flex items-center justify-center">✕</button>
               <div className="text-center mb-8">
                 <div className="w-20 h-20 bg-red-100 dark:bg-red-500/20 text-red-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-5 animate-pulse shadow-[0_0_40px_rgba(239,68,68,0.3)]">🆘</div>
                 <h2 className="text-2xl font-display font-bold text-gray-800 dark:text-white">Bantuan Darurat</h2>
@@ -585,7 +545,7 @@ export default function CurhatPage() {
                   <div><p className="font-bold text-blue-900 dark:text-blue-300 text-lg">Layanan Sejiwa</p><p className="text-sm text-blue-700 dark:text-blue-400">Kemenkes RI</p></div>
                   <span className="bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md">119 ext 8</span>
                 </a>
-                <a href="https://www.intothelightid.org/tentang-bunuh-diri/hotline-dan-konseling/" target="_blank" className="p-5 rounded-[20px] bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800/50 hover:scale-[1.03] active:scale-95 flex justify-between items-center transition-all shadow-sm hover:shadow-md">
+                <a href="https://www.intothelightid.org/tentang-bunuh-diri/hotline-dan-konseling/" target="_blank" rel="noreferrer" className="p-5 rounded-[20px] bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800/50 hover:scale-[1.03] active:scale-95 flex justify-between items-center transition-all shadow-sm hover:shadow-md">
                   <div><p className="font-bold text-orange-900 dark:text-orange-300 text-lg">Into The Light</p><p className="text-sm text-orange-700 dark:text-orange-400">Konseling</p></div>
                   <span className="bg-orange-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md">Website ➔</span>
                 </a>
@@ -594,75 +554,86 @@ export default function CurhatPage() {
           </div>
         )}
 
+        {/* ── MODAL PIN SETUP ── */}
         {showPinSetup && (
           <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
             <div className="bg-white dark:bg-gray-800 p-8 rounded-[36px] max-w-sm w-full shadow-2xl text-center relative border border-gray-100 dark:border-gray-700 animate-slide-up">
-              <button onClick={()=>setShowPinSetup(false)} className="absolute top-6 right-6 text-gray-400 w-9 h-9 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center hover:scale-110 transition-all">✕</button>
+              <button onClick={() => setShowPinSetup(false)} className="absolute top-6 right-6 text-gray-400 w-9 h-9 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center hover:scale-110 transition-all">✕</button>
               <div className="text-5xl mb-5">🔐</div>
               <h2 className="text-2xl font-display font-bold mb-6 dark:text-white">{savedPin ? 'Ubah/Hapus PIN' : 'Buat Keamanan PIN'}</h2>
-              <input type="password" maxLength={4} placeholder="4 Angka Rahasia" className="w-full text-center text-2xl font-bold tracking-[0.4em] p-5 bg-gray-50 dark:bg-gray-900 rounded-[20px] mb-8 outline-none border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all" value={pinInput} onChange={(e) => setPinInput(e.target.value.replace(/\D/g, ''))} />
+              <input type="password" maxLength={4} placeholder="4 Angka Rahasia"
+                className="w-full text-center text-2xl font-bold tracking-[0.4em] p-5 bg-gray-50 dark:bg-gray-900 rounded-[20px] mb-8 outline-none border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all"
+                value={pinInput} onChange={e => setPinInput(e.target.value.replace(/\D/g, ''))} />
               <div className="flex gap-3">
-                <button onClick={() => { if(pinInput.length !== 4) return alert("Harus persis 4 digit angka ya!"); localStorage.setItem(PIN_KEY, pinInput); setSavedPin(pinInput); setPinInput(''); setShowPinSetup(false); alert("PIN Berhasil Disimpan!") }} className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-4 rounded-2xl font-bold text-[15px] transition-all hover:scale-105 active:scale-95 shadow-lg shadow-blue-500/30">Simpan</button>
-                {savedPin && <button onClick={() => { localStorage.removeItem(PIN_KEY); setSavedPin(null); setPinInput(''); setShowPinSetup(false); alert("PIN Dihapus!") }} className="flex-1 bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 py-4 rounded-2xl font-bold text-[15px] transition-all hover:scale-105 active:scale-95 border border-red-200 dark:border-red-800">Hapus PIN</button>}
+                <button onClick={() => { if (pinInput.length !== 4) return alert('Harus persis 4 digit angka ya!'); localStorage.setItem(PIN_KEY, pinInput); setSavedPin(pinInput); setPinInput(''); setShowPinSetup(false); alert('PIN Berhasil Disimpan!') }}
+                  className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-4 rounded-2xl font-bold text-[15px] transition-all hover:scale-105 active:scale-95 shadow-lg shadow-blue-500/30">Simpan</button>
+                {savedPin && <button onClick={() => { localStorage.removeItem(PIN_KEY); setSavedPin(null); setPinInput(''); setShowPinSetup(false); alert('PIN Dihapus!') }}
+                  className="flex-1 bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 py-4 rounded-2xl font-bold text-[15px] transition-all hover:scale-105 active:scale-95 border border-red-200 dark:border-red-800">Hapus PIN</button>}
               </div>
             </div>
           </div>
         )}
 
+        {/* ── MODAL TOPLES SYUKUR ── */}
         {showGratitude && (
           <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
             <div className="bg-[#fdfbf7] dark:bg-gray-800 p-8 rounded-[36px] max-w-lg w-full shadow-2xl relative flex flex-col max-h-[85vh] border border-yellow-100 dark:border-gray-700 animate-slide-up">
-              <button onClick={()=>setShowGratitude(false)} className="absolute top-6 right-6 text-gray-400 w-9 h-9 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center hover:scale-110 transition-all">✕</button>
+              <button onClick={() => setShowGratitude(false)} className="absolute top-6 right-6 text-gray-400 w-9 h-9 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center hover:scale-110 transition-all">✕</button>
               <h2 className="text-3xl font-display font-bold text-yellow-600 dark:text-yellow-400 mb-2">✨ Toples Syukur</h2>
               <p className="text-[15px] text-gray-500 dark:text-gray-400 mb-6">Satu hal kecil yang membuatmu tersenyum hari ini?</p>
-              
               <div className="flex gap-3 mb-8">
-                <input value={newGratitude} onChange={e=>setNewGratitude(e.target.value)} placeholder="Aku sangat bersyukur karena..." onKeyDown={e => e.key === 'Enter' && addGratitude()} className="flex-1 bg-white dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 p-4 rounded-[20px] outline-none focus:border-yellow-400 focus:ring-4 focus:ring-yellow-400/20 transition-all text-[15px]" />
+                <input value={newGratitude} onChange={e => setNewGratitude(e.target.value)} placeholder="Aku sangat bersyukur karena..." onKeyDown={e => e.key === 'Enter' && addGratitude()}
+                  className="flex-1 bg-white dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 p-4 rounded-[20px] outline-none focus:border-yellow-400 focus:ring-4 focus:ring-yellow-400/20 transition-all text-[15px]" />
                 <button onClick={addGratitude} className="bg-yellow-500 text-white px-7 rounded-[20px] font-bold text-2xl hover:bg-yellow-600 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-yellow-500/30">+</button>
               </div>
-
               <div className="flex-1 overflow-y-auto pr-2 space-y-4 rounded-xl">
-                {gratitudes.length === 0 ? <p className="text-center text-gray-400 text-[15px] mt-12 italic">Toplesmu masih kosong. Mulai isi dengan kebahagiaan pertamamu.</p> : 
-                 gratitudes.map(g => (
-                   <div key={g.id} className="p-5 bg-white dark:bg-gray-900 border border-yellow-100 dark:border-gray-700 rounded-[20px] shadow-sm hover:shadow-md transition-shadow">
-                     <p className="text-gray-800 dark:text-gray-200 text-[15px] leading-relaxed">"{g.text}"</p>
-                     <p className="text-[11px] font-bold text-yellow-600/70 mt-3 uppercase tracking-wider">{new Date(g.date).toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric' })}</p>
-                   </div>
-                 ))
+                {gratitudes.length === 0 ? <p className="text-center text-gray-400 text-[15px] mt-12 italic">Toplesmu masih kosong. Mulai isi dengan kebahagiaan pertamamu.</p>
+                  : gratitudes.map(g => (
+                    <div key={g.id} className="p-5 bg-white dark:bg-gray-900 border border-yellow-100 dark:border-gray-700 rounded-[20px] shadow-sm hover:shadow-md transition-shadow">
+                      <p className="text-gray-800 dark:text-gray-200 text-[15px] leading-relaxed">"{g.text}"</p>
+                      <p className="text-[11px] font-bold text-yellow-600/70 mt-3 uppercase tracking-wider">{new Date(g.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                    </div>
+                  ))
                 }
               </div>
             </div>
           </div>
         )}
 
+        {/* ── MODAL AI INSIGHT ── */}
         {showInsight && (
           <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
             <div className="bg-white dark:bg-gray-800 p-8 rounded-[36px] max-w-lg w-full shadow-2xl relative border border-gray-100 dark:border-gray-700 animate-slide-up">
-              <button onClick={()=>setShowInsight(false)} className="absolute top-6 right-6 text-gray-400 w-9 h-9 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center hover:scale-110 transition-all">✕</button>
+              <button onClick={() => setShowInsight(false)} className="absolute top-6 right-6 text-gray-400 w-9 h-9 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center hover:scale-110 transition-all">✕</button>
               <h2 className="text-2xl font-display font-bold text-blue-600 dark:text-blue-400 mb-2 flex items-center gap-3">
                 <span className="p-2.5 bg-blue-100 dark:bg-blue-900/40 rounded-2xl text-2xl">🧠</span> AI Insight
               </h2>
               <p className="text-[15px] text-gray-500 mb-8">Analisis mendalam dari semua riwayat curhatanmu.</p>
-              
               <div className="bg-blue-50/60 dark:bg-gray-900/60 p-6 md:p-8 rounded-[24px] border border-blue-100 dark:border-gray-700 min-h-[220px] flex items-center justify-center text-center shadow-inner">
-                {loadingInsight ? 
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="flex gap-2 text-blue-500"><span className="typing-dot bg-blue-500 w-3 h-3"></span><span className="typing-dot bg-blue-500 w-3 h-3"></span><span className="typing-dot bg-blue-500 w-3 h-3"></span></div>
+                {loadingInsight
+                  ? <div className="flex flex-col items-center gap-4">
+                    <div className="flex gap-2 text-blue-500">
+                      <span className="w-3 h-3 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-3 h-3 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-3 h-3 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
                     <p className="text-[15px] font-semibold text-blue-600/70 tracking-wide">Menganalisis pola emosimu...</p>
                   </div>
-                : 
-                 insightData ? <p className="text-gray-700 dark:text-gray-300 text-[15px] leading-relaxed whitespace-pre-wrap text-left w-full">{insightData}</p> :
-                 <button onClick={fetchInsight} className="bg-blue-500 text-white px-8 py-4 rounded-2xl font-bold text-[15px] hover:bg-blue-600 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-blue-500/30">✨ Mulai Analisis AI</button>
+                  : insightData
+                    ? <p className="text-gray-700 dark:text-gray-300 text-[15px] leading-relaxed whitespace-pre-wrap text-left w-full">{insightData}</p>
+                    : <button onClick={fetchInsight} className="bg-blue-500 text-white px-8 py-4 rounded-2xl font-bold text-[15px] hover:bg-blue-600 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-blue-500/30">✨ Mulai Analisis AI</button>
                 }
               </div>
             </div>
           </div>
         )}
-        
+
         <audio ref={audioRef} loop />
 
+        {/* Hidden export card */}
         <div className="fixed top-[-9999px] left-[-9999px]">
-          <div ref={exportRef} className="w-[400px] p-10 rounded-[32px] flex flex-col items-center text-center relative overflow-hidden" style={{ background: dark ? '#0f172a' : '#ffffff', border: `3px solid ${EMOTIONS[dominantEmotion].color}`, color: dark ? '#f8fafc' : '#0f172a' }}>
+          <div ref={exportRef} className="w-[400px] p-10 rounded-[32px] flex flex-col items-center text-center relative overflow-hidden"
+            style={{ background: dark ? '#0f172a' : '#ffffff', border: `3px solid ${EMOTIONS[dominantEmotion].color}`, color: dark ? '#f8fafc' : '#0f172a' }}>
             <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ background: `radial-gradient(circle at 50% 30%, ${EMOTIONS[dominantEmotion].color}, transparent 70%)` }} />
             <h2 className="text-3xl font-display font-bold relative z-10 mb-1" style={{ color: 'var(--accent)' }}>Kenopia Wrapped</h2>
             <p className="text-sm opacity-60 relative z-10 mb-8 font-medium">{new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
@@ -680,21 +651,23 @@ export default function CurhatPage() {
           </div>
         </div>
 
+        {/* Ambient orbs */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-          <div className="orb w-[500px] h-[500px] -top-40 -left-40 opacity-20" style={{ background: 'radial-gradient(circle, #93c5fd, transparent 70%)', animation: 'orbFloat 10s ease-in-out infinite' }} />
-          <div className="orb w-[400px] h-[400px] -bottom-32 -right-32 opacity-15" style={{ background: 'radial-gradient(circle, #7dd3fc, transparent 70%)', animation: 'orbFloat 13s ease-in-out infinite reverse' }} />
+          <div className="orb w-[500px] h-[500px] -top-40 -left-40 opacity-20" style={{ background: 'radial-gradient(circle,#93c5fd,transparent 70%)', animation: 'orbFloat 10s ease-in-out infinite' }} />
+          <div className="orb w-[400px] h-[400px] -bottom-32 -right-32 opacity-15" style={{ background: 'radial-gradient(circle,#7dd3fc,transparent 70%)', animation: 'orbFloat 13s ease-in-out infinite reverse' }} />
         </div>
 
-        {sidebarOpen && (<div className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm lg:hidden animate-fade-in" onClick={() => setSidebarOpen(false)} />)}
+        {/* Sidebar overlay (mobile) */}
+        {sidebarOpen && <div className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm lg:hidden animate-fade-in" onClick={() => setSidebarOpen(false)} />}
 
-        {/* ── SIDEBAR KIRI ── */}
+        {/* ── SIDEBAR ─────────────────────────────────────────────────────── */}
         <aside
           className={`fixed lg:relative z-40 lg:z-auto w-[300px] h-full flex flex-col transition-transform duration-500 ease-out shadow-2xl lg:shadow-none ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
           style={{ background: 'var(--surface)', borderRight: '1px solid var(--border)' }}
         >
           <div className="p-6 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border)' }}>
             <Link href="/" className="flex items-center gap-3 transition-transform hover:scale-105">
-              <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-[15px] shadow-md font-bold" style={{ background: 'linear-gradient(135deg, #3b82f6, #ec4899)' }}>K</div>
+              <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-[15px] shadow-md font-bold" style={{ background: 'linear-gradient(135deg,#3b82f6,#ec4899)' }}>K</div>
               <span className="font-display text-2xl font-bold tracking-tight" style={{ color: 'var(--accent)' }}>Kenopia</span>
             </Link>
             <button className="lg:hidden w-9 h-9 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center text-gray-500 hover:scale-110 transition-all" onClick={() => setSidebarOpen(false)}>✕</button>
@@ -703,18 +676,21 @@ export default function CurhatPage() {
           <div className="p-5">
             <button
               onClick={() => { setActiveSessionId(null); setInput(''); setError(null); setPendingText(null) }}
-              className="w-full py-4 rounded-2xl text-[15px] font-bold transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg hover:-translate-y-1 active:translate-y-0"
+              className="w-full py-4 rounded-2xl text-[15px] font-bold transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
               style={{ background: 'var(--accent)', color: 'white' }}
             >
-              ✏️ <span>Curhat Baru</span>
+              ✏️ Curhat Baru
             </button>
           </div>
 
           <div className="flex-1 overflow-y-auto px-5 pb-4">
-            
             <div className="grid grid-cols-2 gap-3 mb-6">
-              <button onClick={() => setShowBurnOverlay(true)} className="py-3.5 rounded-2xl text-[13px] font-bold border-dashed border-2 transition-all hover:bg-red-50 dark:hover:bg-red-900/20 flex flex-col items-center gap-1.5 hover:scale-105 shadow-sm" style={{ borderColor: '#ef444450', color: '#ef4444' }}><span className="text-2xl drop-shadow-sm">🔥</span>Lepas Beban</button>
-              <button onClick={() => setShowGratitude(true)} className="py-3.5 rounded-2xl text-[13px] font-bold border-dashed border-2 transition-all hover:bg-yellow-50 dark:hover:bg-yellow-900/20 flex flex-col items-center gap-1.5 hover:scale-105 shadow-sm" style={{ borderColor: '#eab30850', color: '#eab308' }}><span className="text-2xl drop-shadow-sm">✨</span>Toples Syukur</button>
+              <button onClick={() => setShowBurnOverlay(true)} className="py-3.5 rounded-2xl text-[13px] font-bold border-dashed border-2 transition-all hover:bg-red-50 dark:hover:bg-red-900/20 flex flex-col items-center gap-1.5 hover:scale-105 shadow-sm" style={{ borderColor: '#ef444450', color: '#ef4444' }}>
+                <span className="text-2xl">🔥</span>Lepas Beban
+              </button>
+              <button onClick={() => setShowGratitude(true)} className="py-3.5 rounded-2xl text-[13px] font-bold border-dashed border-2 transition-all hover:bg-yellow-50 dark:hover:bg-yellow-900/20 flex flex-col items-center gap-1.5 hover:scale-105 shadow-sm" style={{ borderColor: '#eab30850', color: '#eab308' }}>
+                <span className="text-2xl">✨</span>Toples Syukur
+              </button>
             </div>
 
             <button
@@ -731,7 +707,7 @@ export default function CurhatPage() {
                 <EmotionChart history={allMessages} />
                 <EmotionCalendar messages={allMessages} />
                 <div className="mt-6 flex flex-col gap-3">
-                  <button onClick={() => {setShowInsight(true); fetchInsight()}} className="w-full py-3 text-[13px] font-bold rounded-xl flex justify-center items-center gap-2 transition-all hover:scale-[1.02] active:scale-95 shadow-sm" style={{ background: 'rgba(59,130,246,0.1)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.2)' }}>🧠 AI Insight Keseluruhan</button>
+                  <button onClick={() => { setShowInsight(true); fetchInsight() }} className="w-full py-3 text-[13px] font-bold rounded-xl flex justify-center items-center gap-2 transition-all hover:scale-[1.02] active:scale-95 shadow-sm" style={{ background: 'rgba(59,130,246,0.1)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.2)' }}>🧠 AI Insight Keseluruhan</button>
                   {allMessages.length > 0 && <button onClick={handleExport} className="w-full py-3 text-[13px] font-bold rounded-xl flex justify-center items-center gap-2 transition-all hover:scale-[1.02] active:scale-95 shadow-[0_4px_15px_rgba(59,130,246,0.3)]" style={{ background: 'var(--accent)', color: 'white' }}>📸 Kenopia Wrapped</button>}
                 </div>
               </div>
@@ -741,120 +717,255 @@ export default function CurhatPage() {
               <p className="text-[12px] font-bold uppercase tracking-widest mb-4 px-2 flex justify-between items-center" style={{ color: 'var(--text-faint)' }}>
                 <span>Riwayat Sesi ({sessions.length})</span>
               </p>
-              {sessions.length === 0 ? (
-                <div className="py-8 px-4 text-center bg-gray-50 dark:bg-gray-800/40 rounded-[20px] border-2 border-dashed border-gray-200 dark:border-gray-700">
-                  <p className="text-[14px] leading-relaxed font-medium" style={{ color: 'var(--text-faint)' }}>
-                    Riwayat masih kosong.<br />Mulai sapa Kenopia yuk!
-                  </p>
+              {sessions.length === 0
+                ? <div className="py-8 px-4 text-center bg-gray-50 dark:bg-gray-800/40 rounded-[20px] border-2 border-dashed border-gray-200 dark:border-gray-700">
+                  <p className="text-[14px] leading-relaxed font-medium" style={{ color: 'var(--text-faint)' }}>Riwayat masih kosong.<br />Mulai sapa Kenopia yuk!</p>
                 </div>
-              ) : (
-                <div className="flex flex-col gap-2">
+                : <div className="flex flex-col gap-2">
                   {[...sessions].reverse().map(session => (
                     <HistoryItem key={session.id} session={session} active={activeSessionId === session.id}
                       onClick={() => { setActiveSessionId(session.id); setSidebarOpen(false) }} />
                   ))}
                 </div>
-              )}
+              }
             </div>
           </div>
 
           <div className="p-5 flex flex-col gap-3" style={{ borderTop: '1px solid var(--border)' }}>
             <div className="flex gap-3">
-              <button onClick={() => setShowPinSetup(true)} className="flex-1 py-3 rounded-xl text-[13px] font-bold transition-all border border-transparent hover:border-gray-300 dark:hover:border-gray-600 flex items-center justify-center gap-2 hover:scale-105" style={{ color: 'var(--text-muted)', background: 'var(--surface-2)' }}>🔒 {savedPin ? 'Ubah PIN' : 'Set PIN'}</button>
-              <button onClick={() => setShowNameModal(true)} className="flex-1 py-3 rounded-xl text-[13px] font-bold transition-all border border-transparent hover:border-blue-200 dark:hover:border-blue-900/50 flex items-center justify-center gap-2 hover:scale-105" style={{ color: 'var(--accent)', background: 'var(--accent-soft)' }}>👤 Ganti Nama</button>
+              <button onClick={() => setShowPinSetup(true)} className="flex-1 py-3 rounded-xl text-[13px] font-bold transition-all border border-transparent hover:border-gray-300 dark:hover:border-gray-600 flex items-center justify-center gap-2 hover:scale-105" style={{ color: 'var(--text-muted)', background: 'var(--surface-2)' }}>
+                🔒 {savedPin ? 'Ubah PIN' : 'Set PIN'}
+              </button>
+              <button onClick={() => setShowNameModal(true)} className="flex-1 py-3 rounded-xl text-[13px] font-bold transition-all border border-transparent hover:border-blue-200 dark:hover:border-blue-900/50 flex items-center justify-center gap-2 hover:scale-105" style={{ color: 'var(--accent)', background: 'var(--accent-soft)' }}>
+                👤 Ganti Nama
+              </button>
             </div>
             {sessions.length > 0 && (
-              <button onClick={clearHistory} className="w-full py-3 rounded-xl text-[13px] font-bold transition-all hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 flex items-center justify-center gap-2 hover:scale-105" style={{ color: 'var(--text-muted)', background: 'var(--surface-2)' }}>🗑️ Hapus Semua Riwayat</button>
+              <button onClick={clearHistory} className="w-full py-3 rounded-xl text-[13px] font-bold transition-all hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 flex items-center justify-center gap-2 hover:scale-105" style={{ color: 'var(--text-muted)', background: 'var(--surface-2)' }}>
+                🗑️ Hapus Semua Riwayat
+              </button>
             )}
           </div>
         </aside>
 
-        {/* ── AREA CHAT UTAMA ── */}
+        {/* ── AREA CHAT UTAMA ──────────────────────────────────────────────── */}
         <main className="flex-1 flex flex-col min-w-0 h-full relative z-10 bg-transparent">
-          <header className="flex items-center justify-between px-6 py-4 flex-shrink-0 shadow-sm backdrop-blur-md"
-            style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
-            <div className="flex items-center gap-4">
-              <button className="lg:hidden w-11 h-11 rounded-full flex items-center justify-center transition-all bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 shadow-sm"
-                style={{ color: 'var(--text-muted)' }}
-                onClick={() => setSidebarOpen(true)}>☰</button>
-              <div>
-                <p className="font-bold text-[17px] tracking-wide flex items-center gap-2" style={{ color: 'var(--text)' }}>
-                  {activeSessionId ? <>{EMOTIONS[activeMessages[activeMessages.length - 1]?.emotion ?? 'sedih'].emoji} Sesi Tersimpan</> : <>💬 Kenopia AI</>}
+
+          {/* ── HEADER (RESPONSIVE) ── */}
+          <header
+            className="flex items-center justify-between px-4 md:px-6 py-3 flex-shrink-0 backdrop-blur-md"
+            style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)', minHeight: '64px' }}
+          >
+            {/* Kiri: hamburger + avatar + judul */}
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <button
+                className="lg:hidden w-10 h-10 rounded-2xl flex items-center justify-center transition-all flex-shrink-0 hover:scale-105 active:scale-95"
+                style={{ background: 'var(--surface-2)', border: '1px solid var(--border-2)', color: 'var(--text-muted)' }}
+                onClick={() => setSidebarOpen(true)}
+                aria-label="Buka sidebar"
+              >
+                ☰
+              </button>
+
+              {/* Avatar K */}
+              <div
+                className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-[14px] font-bold text-white shadow-md"
+                style={{ background: 'linear-gradient(135deg,#3b82f6,#ec4899)' }}
+              >K</div>
+
+              {/* Judul + subtitle */}
+              <div className="min-w-0">
+                <p className="font-bold text-[15px] md:text-[16px] leading-tight truncate" style={{ color: 'var(--text)' }}>
+                  {activeSessionId
+                    ? <>{EMOTIONS[activeMessages[activeMessages.length - 1]?.emotion ?? 'sedih'].emoji} Sesi Tersimpan</>
+                    : <>💬 Kenopia AI</>
+                  }
                 </p>
-                <p className="text-[13px] font-medium opacity-60 mt-0.5" style={{ color: 'var(--text-muted)' }}>Mendengar {userName ? userName : 'kamu'} tanpa menghakimi</p>
+                <p className="text-[11px] md:text-[12px] font-medium leading-tight truncate mt-0.5" style={{ color: 'var(--text-faint)' }}>
+                  Halo <span className="font-bold" style={{ color: 'var(--accent)' }}>{userName || 'Sinar'}</span> 👋
+                </p>
               </div>
             </div>
-            
-            <div className="flex items-center gap-3">
-              {/* Dropdown Persona */}
-              <div className="relative group hidden md:block">
-                <button className="px-5 py-2.5 rounded-full text-[13px] font-bold flex items-center gap-2 transition-all shadow-sm border border-transparent hover:border-blue-200 relative z-10" style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}>
-                  🎭 {persona === 'sahabat' ? 'Sahabat' : persona === 'psikolog' ? 'Psikolog' : 'Filsuf'}
-                </button>
-                <div className="absolute right-0 top-full pt-2 w-40 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-[100]">
-                  {/* INVISIBLE BRIDGE: Area ini mencegah mouse "terputus" dari trigger saat digeser ke bawah */}
-                  <div className="absolute inset-x-0 -top-3 h-6 bg-transparent" />
-                  <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 flex flex-col overflow-hidden p-2 relative">
-                    <button onClick={() => setPersona('sahabat')} className="text-left px-4 py-3 text-[14px] font-medium rounded-xl hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-slate-700 transition-colors">👋 Sahabat</button>
-                    <button onClick={() => setPersona('psikolog')} className="text-left px-4 py-3 text-[14px] font-medium rounded-xl hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-slate-700 transition-colors">🩺 Psikolog</button>
-                    <button onClick={() => setPersona('filsuf')} className="text-left px-4 py-3 text-[14px] font-medium rounded-xl hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-slate-700 transition-colors">🧘 Filsuf Zen</button>
+
+            {/* Kanan */}
+            <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+
+              {/* ── DESKTOP: semua tombol lengkap ── */}
+              <div className="hidden md:flex items-center gap-2">
+                {/* Persona dropdown */}
+                <div className="relative group">
+                  <button className="px-4 py-2 rounded-full text-[13px] font-bold flex items-center gap-2 transition-all shadow-sm border hover:scale-105" style={{ background: 'var(--surface-2)', color: 'var(--text-muted)', borderColor: 'var(--border-2)' }}>
+                    🎭 {persona === 'sahabat' ? 'Sahabat' : persona === 'psikolog' ? 'Psikolog' : 'Filsuf Zen'}
+                    <span className="opacity-40 text-[10px]">▼</span>
+                  </button>
+                  <div className="absolute right-0 top-full pt-2 w-44 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[100]">
+                    <div className="absolute inset-x-0 -top-3 h-6 bg-transparent" />
+                    <div className="rounded-2xl shadow-xl border flex flex-col overflow-hidden p-2" style={{ background: 'var(--surface)', borderColor: 'var(--border-2)' }}>
+                      {(['sahabat', 'psikolog', 'filsuf'] as const).map(p => (
+                        <button key={p} onClick={() => setPersona(p)}
+                          className="text-left px-4 py-3 text-[13px] font-semibold rounded-xl transition-all flex items-center gap-2"
+                          style={{ background: persona === p ? 'var(--accent-soft)' : 'transparent', color: persona === p ? 'var(--accent)' : 'var(--text)' }}
+                        >
+                          {p === 'sahabat' ? '👋' : p === 'psikolog' ? '🩺' : '🧘'}
+                          {p === 'sahabat' ? 'Sahabat' : p === 'psikolog' ? 'Psikolog' : 'Filsuf Zen'}
+                          {persona === p && <span className="ml-auto text-xs">✓</span>}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <button onClick={() => setShowSOS(true)} className="px-4 py-2.5 rounded-full text-[13px] font-bold text-red-500 bg-red-50 hover:bg-red-100 hover:scale-105 transition-all shadow-sm hidden sm:block">🆘 Darurat</button>
-
-              {/* Dropdown Ambient Sound */}
-              <div className="relative group">
-                <button 
-                  className="px-5 py-2.5 rounded-full text-[13px] font-bold flex items-center gap-2 transition-all shadow-sm border border-transparent relative z-10"
-                  style={{ background: ambient ? 'var(--accent)' : 'var(--surface-2)', color: ambient ? 'white' : 'var(--text-muted)', borderColor: ambient ? 'transparent' : 'var(--border-2)' }}
-                  title="Suara Latar Penenang"
-                >
-                  🎵 {ambient === 'hujan' ? 'Hujan' : ambient === 'api' ? 'Api' : ambient === 'alam' ? 'Alam' : 'Musik'}
-                </button>
-                <div className="absolute right-0 top-full pt-2 w-44 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-[100]">
-                  {/* INVISIBLE BRIDGE */}
-                  <div className="absolute inset-x-0 -top-3 h-6 bg-transparent" />
-                  <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 flex flex-col overflow-hidden p-2 relative">
-                    <button onClick={() => handlePlayAmbient('hujan')} className="text-left px-4 py-3 text-[14px] font-medium rounded-xl hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-slate-700 transition-colors">🌧️ Hujan Sore</button>
-                    <button onClick={() => handlePlayAmbient('api')} className="text-left px-4 py-3 text-[14px] font-medium rounded-xl hover:bg-orange-50 hover:text-orange-600 dark:hover:bg-slate-700 transition-colors">🔥 Api Unggun</button>
-                    <button onClick={() => handlePlayAmbient('alam')} className="text-left px-4 py-3 text-[14px] font-medium rounded-xl hover:bg-green-50 hover:text-green-600 dark:hover:bg-slate-700 transition-colors">🍃 Suara Alam</button>
-                    <div className="h-px bg-gray-100 dark:bg-slate-700 w-full my-1.5" />
-                    <button onClick={() => handlePlayAmbient(null)} className="text-left px-4 py-3 text-[14px] font-bold rounded-xl hover:bg-red-50 dark:hover:bg-red-900/30 text-red-500 transition-colors">🔇 Matikan Suara</button>
+                {/* Ambient dropdown */}
+                <div className="relative group">
+                  <button className="px-4 py-2 rounded-full text-[13px] font-bold flex items-center gap-2 transition-all shadow-sm border hover:scale-105"
+                    style={{ background: ambient ? 'var(--accent)' : 'var(--surface-2)', color: ambient ? 'white' : 'var(--text-muted)', borderColor: ambient ? 'transparent' : 'var(--border-2)' }}>
+                    🎵 {ambient === 'hujan' ? 'Hujan' : ambient === 'api' ? 'Api' : ambient === 'alam' ? 'Alam' : 'Musik'}
+                    <span className={`text-[10px] ${ambient ? 'opacity-60' : 'opacity-40'}`}>▼</span>
+                  </button>
+                  <div className="absolute right-0 top-full pt-2 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[100]">
+                    <div className="absolute inset-x-0 -top-3 h-6 bg-transparent" />
+                    <div className="rounded-2xl shadow-xl border flex flex-col overflow-hidden p-2" style={{ background: 'var(--surface)', borderColor: 'var(--border-2)' }}>
+                      {(['hujan', 'api', 'alam'] as const).map(a => (
+                        <button key={a} onClick={() => handlePlayAmbient(a)}
+                          className="text-left px-4 py-3 text-[13px] font-semibold rounded-xl transition-all flex items-center gap-2"
+                          style={{ background: ambient === a ? 'var(--accent-soft)' : 'transparent', color: ambient === a ? 'var(--accent)' : 'var(--text)' }}
+                        >
+                          {a === 'hujan' ? '🌧️ Hujan Sore' : a === 'api' ? '🔥 Api Unggun' : '🍃 Suara Alam'}
+                          {ambient === a && <span className="ml-auto text-xs">✓</span>}
+                        </button>
+                      ))}
+                      {ambient && <>
+                        <div className="my-1 mx-3" style={{ height: '1px', background: 'var(--border)' }} />
+                        <button onClick={() => handlePlayAmbient(null)} className="text-left px-4 py-3 text-[13px] font-semibold rounded-xl transition-all text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20">
+                          🔇 Matikan Suara
+                        </button>
+                      </>}
+                    </div>
                   </div>
                 </div>
+
+                <button onClick={() => setShowSOS(true)} className="px-4 py-2 rounded-full text-[13px] font-bold transition-all hover:scale-105 active:scale-95 shadow-sm" style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}>
+                  🆘 Darurat
+                </button>
+
+                <button onClick={() => setShowBreathing(true)} className="px-4 py-2 rounded-full text-[13px] font-bold flex items-center gap-2 transition-all hover:scale-105 active:scale-95 shadow-sm" style={{ background: 'rgba(14,165,233,0.1)', color: '#0ea5e9', border: '1px solid rgba(14,165,233,0.25)' }}>
+                  🫁 Tenang
+                </button>
+
+                <ThemeToggle dark={dark} toggle={toggleTheme} />
               </div>
 
-              <button 
-                onClick={() => setShowBreathing(true)}
-                className="px-5 py-2.5 rounded-full text-[13px] font-bold flex items-center gap-2 transition-all hover:scale-105 shadow-sm hidden sm:flex"
-                style={{ background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(56, 189, 248, 0.15))', color: '#0ea5e9', border: '1px solid rgba(14, 165, 233, 0.3)' }}
-              >
-                🫁 Tenang
-              </button>
-              <ThemeToggle dark={dark} toggle={toggleTheme} />
+              {/* ── MOBILE: icon row + overflow menu ── */}
+              <div className="flex md:hidden items-center gap-1.5">
+                {/* Napas */}
+                <button
+                  onClick={() => setShowBreathing(true)}
+                  className="w-10 h-10 rounded-2xl flex items-center justify-center text-[18px] transition-all hover:scale-110 active:scale-95"
+                  style={{ background: 'rgba(14,165,233,0.1)', border: '1px solid rgba(14,165,233,0.2)' }}
+                  aria-label="Latihan napas"
+                >🫁</button>
+
+                {/* SOS */}
+                <button
+                  onClick={() => setShowSOS(true)}
+                  className="w-10 h-10 rounded-2xl flex items-center justify-center text-[18px] transition-all hover:scale-110 active:scale-95"
+                  style={{ background: '#fef2f2', border: '1px solid #fecaca' }}
+                  aria-label="Bantuan darurat"
+                >🆘</button>
+
+                {/* Theme toggle */}
+                <button
+                  onClick={toggleTheme}
+                  className="w-10 h-10 rounded-2xl flex items-center justify-center text-[18px] transition-all hover:scale-110 active:scale-95"
+                  style={{ background: 'var(--surface-2)', border: '1px solid var(--border-2)', color: 'var(--text-muted)' }}
+                  aria-label="Ganti tema"
+                >{dark ? '☀️' : '🌙'}</button>
+
+                {/* Overflow: persona + ambient */}
+                <div className="relative" ref={mobileMenuRef}>
+                  <button
+                    onClick={() => setShowMobileMenu(v => !v)}
+                    className="w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-xl transition-all hover:scale-110 active:scale-95"
+                    style={{
+                      background: showMobileMenu ? 'var(--accent)' : 'var(--surface-2)',
+                      color: showMobileMenu ? 'white' : 'var(--text-muted)',
+                      border: `1px solid ${showMobileMenu ? 'transparent' : 'var(--border-2)'}`,
+                      letterSpacing: '0.08em',
+                      lineHeight: '1',
+                    }}
+                    aria-label="Menu lainnya"
+                  >···</button>
+
+                  {showMobileMenu && (
+                    <div
+                      className="absolute right-0 top-[48px] w-60 rounded-[24px] shadow-2xl z-[200] p-2 mobile-menu-enter"
+                      style={{ background: 'var(--surface)', border: '1px solid var(--border-2)', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}
+                    >
+                      {/* Persona */}
+                      <p className="px-4 pt-3 pb-1 text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-faint)' }}>Persona</p>
+                      {(['sahabat', 'psikolog', 'filsuf'] as const).map(p => (
+                        <button key={p} onClick={() => { setPersona(p); setShowMobileMenu(false) }}
+                          className="w-full text-left px-4 py-3 rounded-xl text-[14px] font-semibold flex items-center gap-3 transition-all"
+                          style={{ background: persona === p ? 'var(--accent-soft)' : 'transparent', color: persona === p ? 'var(--accent)' : 'var(--text)' }}
+                        >
+                          <span>{p === 'sahabat' ? '👋' : p === 'psikolog' ? '🩺' : '🧘'}</span>
+                          {p === 'sahabat' ? 'Sahabat' : p === 'psikolog' ? 'Psikolog' : 'Filsuf Zen'}
+                          {persona === p && <span className="ml-auto text-xs opacity-60">✓</span>}
+                        </button>
+                      ))}
+
+                      <div className="my-2 mx-3" style={{ height: '1px', background: 'var(--border)' }} />
+
+                      {/* Ambient */}
+                      <p className="px-4 pb-1 text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-faint)' }}>Suara Latar</p>
+                      {(['hujan', 'api', 'alam'] as const).map(a => (
+                        <button key={a} onClick={() => { handlePlayAmbient(ambient === a ? null : a); setShowMobileMenu(false) }}
+                          className="w-full text-left px-4 py-3 rounded-xl text-[14px] font-semibold flex items-center gap-3 transition-all"
+                          style={{ background: ambient === a ? 'var(--accent-soft)' : 'transparent', color: ambient === a ? 'var(--accent)' : 'var(--text)' }}
+                        >
+                          <span>{a === 'hujan' ? '🌧️' : a === 'api' ? '🔥' : '🍃'}</span>
+                          {a === 'hujan' ? 'Hujan Sore' : a === 'api' ? 'Api Unggun' : 'Suara Alam'}
+                          {ambient === a && <span className="ml-auto text-xs opacity-60">✓</span>}
+                        </button>
+                      ))}
+                      {ambient && (
+                        <button onClick={() => { handlePlayAmbient(null); setShowMobileMenu(false) }}
+                          className="w-full text-left px-4 py-3 rounded-xl text-[14px] font-semibold flex items-center gap-3 transition-all text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                        >
+                          <span>🔇</span> Matikan Suara
+                        </button>
+                      )}
+
+                      {/* Bottom padding */}
+                      <div className="h-2" />
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </header>
 
+          {/* ── CHAT BODY ── */}
           <div className="flex-1 overflow-y-auto px-4 md:px-8 py-8 flex flex-col gap-6">
             {activeMessages.length === 0 && !pendingText && (
               <div className="flex flex-col items-center justify-center flex-1 gap-6 text-center py-12 animate-fade-in">
                 <div className="w-24 h-24 rounded-[30px] flex items-center justify-center text-5xl shadow-[0_20px_50px_rgba(59,130,246,0.35)] animate-float-slow border border-white/20"
-                  style={{ background: 'linear-gradient(135deg, #3b82f6, #ec4899)' }}>🤍</div>
+                  style={{ background: 'linear-gradient(135deg,#3b82f6,#ec4899)' }}>🤍</div>
                 <div>
-                  <h2 className="font-display text-4xl font-bold mb-3 tracking-tight" style={{ color: 'var(--text)' }}>
+                  <h2 className="font-display text-3xl md:text-4xl font-bold mb-3 tracking-tight" style={{ color: 'var(--text)' }}>
                     Halo {userName || 'Sinar'}, aku Kenopia
                   </h2>
-                  <p className="max-w-lg text-[16px] leading-relaxed mx-auto opacity-75 font-medium" style={{ color: 'var(--text)' }}>
+                  <p className="max-w-lg text-[15px] md:text-[16px] leading-relaxed mx-auto opacity-75 font-medium" style={{ color: 'var(--text)' }}>
                     Ini ruang amanmu. Setiap sesi obrolan akan tersimpan dan diberi judul otomatis. Ketikkan apa yang sedang kamu rasakan.
                   </p>
                 </div>
-                <div className="flex flex-wrap justify-center gap-3 mt-6 max-w-2xl">
+                <div className="flex flex-wrap justify-center gap-3 mt-4 max-w-2xl">
                   {Object.values(EMOTIONS).map((e, idx) => (
-                    <button key={e.label} onClick={() => { setInput(`Aku merasa ${e.label.toLowerCase()} hari ini karena... `); textareaRef.current?.focus() }}
+                    <button key={e.label}
+                      onClick={() => { setInput(`Aku merasa ${e.label.toLowerCase()} hari ini karena... `); textareaRef.current?.focus() }}
                       className="px-5 py-3 rounded-full text-[14px] font-bold transition-all shadow-sm hover:shadow-md hover:-translate-y-1 active:translate-y-0 animate-pop-in-cute"
-                      style={{ background: e.bgLight, color: e.color, border: `1.5px solid ${e.color}30`, animationDelay: `${idx * 100}ms` }}>
+                      style={{ background: e.bgLight, color: e.color, border: `1.5px solid ${e.color}30`, animationDelay: `${idx * 80}ms` }}
+                    >
                       {e.emoji} {e.label}
                     </button>
                   ))}
@@ -863,39 +974,60 @@ export default function CurhatPage() {
             )}
 
             {activeMessages.map(msg => <MessageBubble key={msg.id} msg={msg} />)}
-            
             {pendingText && <PendingUserBubble text={pendingText} />}
             {loading && <TypingIndicator />}
-            {error && (<div className="animate-fade-in px-6 py-5 rounded-2xl text-[15px] font-bold shadow-md mx-auto max-w-md w-full text-center" style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}>⚠️ {error}</div>)}
+            {error && (
+              <div className="animate-fade-in px-6 py-5 rounded-2xl text-[15px] font-bold shadow-md mx-auto max-w-md w-full text-center" style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}>
+                ⚠️ {error}
+              </div>
+            )}
             <div ref={chatEndRef} />
           </div>
 
+          {/* ── INPUT AREA ── */}
           <div className="flex-shrink-0 p-4 md:p-6 bg-transparent relative">
             <div className="absolute inset-0 top-auto h-40 pointer-events-none" style={{ background: 'linear-gradient(to top, var(--bg) 60%, transparent)' }} />
-            
+
             <div className="relative z-10 max-w-4xl mx-auto">
               {voiceHint && (
-                <div className="max-w-[max-content] mx-auto mb-4 px-6 py-3 rounded-full text-[14px] font-bold text-center animate-fade-in shadow-md flex items-center gap-2" style={{ background: isListening ? 'rgba(239,68,68,0.1)' : 'var(--accent-soft)', color: isListening ? '#ef4444' : 'var(--accent)', border: `1px solid ${isListening ? '#ef444440' : 'var(--accent)40'}` }}>
+                <div className="max-w-max mx-auto mb-4 px-6 py-3 rounded-full text-[14px] font-bold text-center animate-fade-in shadow-md flex items-center gap-2"
+                  style={{ background: isListening ? 'rgba(239,68,68,0.1)' : 'var(--accent-soft)', color: isListening ? '#ef4444' : 'var(--accent)', border: `1px solid ${isListening ? '#ef444440' : 'var(--accent)40'}` }}>
                   {isListening ? <span className="animate-pulse">🔴</span> : <span>✨</span>}{voiceHint}
                 </div>
               )}
 
-              <div className="flex items-end gap-3 p-2.5 bg-white/70 dark:bg-gray-900/70 backdrop-blur-2xl rounded-[36px] border border-gray-200/60 dark:border-gray-700/60 shadow-[0_8px_40px_rgba(0,0,0,0.06)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.3)] transition-all focus-within:shadow-[0_8px_40px_rgba(59,130,246,0.15)] focus-within:border-blue-300 dark:focus-within:border-blue-900/50">
-                {voiceSupported && (<div className="pb-1 pl-1"><MicButton isListening={isListening} onClick={toggleVoice} disabled={loading} /></div>)}
+              <div className="flex items-end gap-3 p-2.5 backdrop-blur-2xl rounded-[36px] border transition-all focus-within:border-blue-300 dark:focus-within:border-blue-900/50"
+                style={{ background: 'var(--surface)', borderColor: 'var(--border)', boxShadow: '0 8px 40px rgba(0,0,0,0.06)' }}>
+                {voiceSupported && (
+                  <div className="pb-1 pl-1">
+                    <MicButton isListening={isListening} onClick={toggleVoice} disabled={loading} />
+                  </div>
+                )}
                 <textarea
                   ref={textareaRef}
-                  className="chat-input flex-1 px-5 py-5 rounded-[24px] text-[16px] leading-relaxed bg-transparent border-none outline-none resize-none transition-all placeholder-gray-400 dark:placeholder-gray-500"
-                  placeholder={isListening ? '🎙️ Sedang merekam suara...' : voiceSupported ? `Ketik atau ketuk 🎤 untuk bicara dengan ${persona}...` : `Ceritakan yang kamu rasakan pada ${persona}...`}
-                  rows={1} value={input} onChange={handleInputChange} onKeyDown={handleKeyDown} disabled={loading} style={{ minHeight: '64px', maxHeight: '200px', color: 'var(--text)' }}
+                  className="chat-input flex-1 px-4 py-4 rounded-[24px] text-[15px] md:text-[16px] leading-relaxed bg-transparent border-none outline-none resize-none transition-all placeholder-gray-400 dark:placeholder-gray-500"
+                  placeholder={
+                    isListening ? '🎙️ Sedang merekam suara...'
+                      : voiceSupported ? `Ketik atau ketuk 🎤 — ceritakan ke ${persona}...`
+                        : `Ceritakan yang kamu rasakan pada ${persona}...`
+                  }
+                  rows={1} value={input} onChange={handleInputChange} onKeyDown={handleKeyDown} disabled={loading}
+                  style={{ minHeight: '60px', maxHeight: '200px', color: 'var(--text)' }}
                 />
                 <div className="pb-1 pr-1">
-                  <button onClick={handleSubmit} disabled={loading || !input.replace(/\s*\[.*?\]$/, '').trim()} className="w-14 h-14 rounded-full flex items-center justify-center text-2xl flex-shrink-0 transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed shadow-md hover:shadow-lg hover:-translate-y-1 active:translate-y-0" style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', color: 'white' }} aria-label="Kirim">
-                    {loading ? <span style={{ animation: 'pulse 1s ease-in-out infinite' }}>✨</span> : <span className="ml-1">🚀</span>}
+                  <button
+                    onClick={handleSubmit}
+                    disabled={loading || !input.replace(/\s*\[.*?\]$/, '').trim()}
+                    className="w-[52px] h-[52px] rounded-full flex items-center justify-center text-xl flex-shrink-0 transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
+                    style={{ background: 'linear-gradient(135deg,#3b82f6,#8b5cf6)', color: 'white' }}
+                    aria-label="Kirim"
+                  >
+                    {loading ? <span className="animate-pulse">✨</span> : <span className="ml-0.5">🚀</span>}
                   </button>
                 </div>
               </div>
 
-              <p className="text-center text-[11px] font-bold mt-5 tracking-widest opacity-40 uppercase flex items-center justify-center gap-1" style={{ color: 'var(--text-muted)' }}>
+              <p className="text-center text-[10px] md:text-[11px] font-bold mt-4 tracking-widest opacity-35 uppercase flex items-center justify-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
                 🔒 Privasi 100% Aman <span className="opacity-50">•</span> Kenopia tidak membagikan datamu
               </p>
             </div>
