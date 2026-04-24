@@ -561,7 +561,7 @@ export default function CurhatPage() {
   // FITUR BARU: Streak computation
   const computeStreak = useCallback((s: ChatSession[]) => {
     if (!s.length) return 0
-    const uniqueDays = [...new Set(s.flatMap(sess => sess.messages.map(m => new Date(m.timestamp).toDateString())))]
+    const uniqueDays = Array.from(new Set(s.flatMap(sess => sess.messages.map(m => new Date(m.timestamp).toDateString()))))
       .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
     let streak = 0
     const check = new Date()
