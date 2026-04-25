@@ -952,15 +952,7 @@ export default function CurhatPage() {
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (personaDDRef.current && !personaDDRef.current.contains(e.target as Node)) setShowPersonaDD(false)
-      if (ambientDDRef.current && !ambientDDRef.current.contains(e.target as Node)) setShowAmbientDD(false)
-      if (themeDDRef.current && !themeDDRef.current.contains(e.target as Node)) setShowThemeDD(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
+
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [activeMessages, loading, pendingText])
   useEffect(() => () => { recognitionRef.current?.abort() }, [])
@@ -1372,35 +1364,35 @@ export default function CurhatPage() {
         {/* ── Mobile Bottom Sheet ── */}
         {showMobileMenu && (
           <>
-            <div className="fixed inset-0 md:hidden" style={{ zIndex: 190, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)' }} onClick={() => setShowMobileMenu(false)} />
-            <div className="fixed bottom-0 left-0 right-0 rounded-t-4xl px-5 pt-4 pb-10 sheet-enter md:hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border-2)', boxShadow: '0 -24px 80px rgba(0,0,0,0.2)', zIndex: 195 }}>
+            <div className="fixed inset-0 md:hidden" style={{ zIndex: 195, background: 'rgba(0,0,0,0.5)' }} onClick={() => setShowMobileMenu(false)} />
+            <div className="fixed bottom-0 left-0 right-0 rounded-t-4xl px-5 pt-4 pb-10 sheet-enter md:hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border-2)', boxShadow: '0 -24px 80px rgba(0,0,0,0.2)', zIndex: 200 }}>
               <div className="w-10 h-1.5 rounded-full mx-auto mb-5" style={{ background: 'var(--border-2)' }} />
               {/* 9-feature grid */}
               <div className="grid grid-cols-4 gap-2 mb-4">
                 {[
-                  { icon: '🧘', label: 'Ground', action: () => openOverlay(() => setShowGrounding(true)), style: { bg: 'rgba(16,185,129,0.1)', color: '#10b981', border: 'rgba(16,185,129,0.25)' } },
-                  { icon: '🫁', label: 'Napas', action: () => openOverlay(() => setShowBreathing(true)), style: { bg: 'rgba(14,165,233,0.1)', color: '#0ea5e9', border: 'rgba(14,165,233,0.25)' } },
-                  { icon: '🫧', label: 'Bubble', action: () => openOverlay(() => setShowBubbleWrap(true)), style: { bg: 'rgba(139,92,246,0.1)', color: '#8b5cf6', border: 'rgba(139,92,246,0.25)' } },
-                  { icon: '🔥', label: 'Beban', action: () => openOverlay(() => setShowBurnOverlay(true)), style: { bg: 'rgba(239,68,68,0.1)', color: '#ef4444', border: 'rgba(239,68,68,0.25)' } },
-                  { icon: '✨', label: 'Syukur', action: () => openOverlay(() => setShowGratitude(true)), style: { bg: 'rgba(234,179,8,0.1)', color: '#ca8a04', border: 'rgba(234,179,8,0.25)' } },
-                  { icon: '⏳', label: 'Kapsul', action: () => openOverlay(() => setShowCapsule(true)), style: { bg: 'rgba(99,102,241,0.1)', color: '#6366f1', border: 'rgba(99,102,241,0.25)' } },
-                  { icon: '🎨', label: 'Kanvas', action: () => openOverlay(() => setShowZenCanvas(true)), style: { bg: '#1f2937', color: '#d1d5db', border: '#374151' } },
-                  { icon: '🎈', label: 'Balon', action: () => openOverlay(() => setShowBalloon(true)), style: { bg: 'rgba(59,130,246,0.1)', color: '#3b82f6', border: 'rgba(59,130,246,0.25)' } },
-                  { icon: '✉️', label: 'Surat', action: () => openOverlay(() => setShowFutureSelf(true)), style: { bg: 'rgba(134,239,172,0.1)', color: '#16a34a', border: 'rgba(134,239,172,0.25)' } },
+                  { icon: '🧘', label: 'Ground', action: () => { setShowMobileMenu(false); setTimeout(() => setShowGrounding(true), 50) }, style: { bg: 'rgba(16,185,129,0.1)', color: '#10b981', border: 'rgba(16,185,129,0.25)' } },
+                  { icon: '🫁', label: 'Napas', action: () => { setShowMobileMenu(false); setTimeout(() => setShowBreathing(true), 50) }, style: { bg: 'rgba(14,165,233,0.1)', color: '#0ea5e9', border: 'rgba(14,165,233,0.25)' } },
+                  { icon: '🫧', label: 'Bubble', action: () => { setShowMobileMenu(false); setTimeout(() => setShowBubbleWrap(true), 50) }, style: { bg: 'rgba(139,92,246,0.1)', color: '#8b5cf6', border: 'rgba(139,92,246,0.25)' } },
+                  { icon: '🔥', label: 'Beban', action: () => { setShowMobileMenu(false); setTimeout(() => setShowBurnOverlay(true), 50) }, style: { bg: 'rgba(239,68,68,0.1)', color: '#ef4444', border: 'rgba(239,68,68,0.25)' } },
+                  { icon: '✨', label: 'Syukur', action: () => { setShowMobileMenu(false); setTimeout(() => setShowGratitude(true), 50) }, style: { bg: 'rgba(234,179,8,0.1)', color: '#ca8a04', border: 'rgba(234,179,8,0.25)' } },
+                  { icon: '⏳', label: 'Kapsul', action: () => { setShowMobileMenu(false); setTimeout(() => setShowCapsule(true), 50) }, style: { bg: 'rgba(99,102,241,0.1)', color: '#6366f1', border: 'rgba(99,102,241,0.25)' } },
+                  { icon: '🎨', label: 'Kanvas', action: () => { setShowMobileMenu(false); setTimeout(() => setShowZenCanvas(true), 50) }, style: { bg: '#1f2937', color: '#d1d5db', border: '#374151' } },
+                  { icon: '🎈', label: 'Balon', action: () => { setShowMobileMenu(false); setTimeout(() => setShowBalloon(true), 50) }, style: { bg: 'rgba(59,130,246,0.1)', color: '#3b82f6', border: 'rgba(59,130,246,0.25)' } },
+                  { icon: '✉️', label: 'Surat', action: () => { setShowMobileMenu(false); setTimeout(() => setShowFutureSelf(true), 50) }, style: { bg: 'rgba(134,239,172,0.1)', color: '#16a34a', border: 'rgba(134,239,172,0.25)' } },
                 ].map(btn => (
-                  <button key={btn.label} onClick={btn.action} className="py-3 rounded-xl text-xs font-bold flex flex-col items-center gap-1.5 transition-all active:scale-95 shadow-sm"
+                  <button key={btn.label} onClick={e => { e.stopPropagation(); btn.action() }} className="py-3 rounded-xl text-xs font-bold flex flex-col items-center gap-1.5 transition-all active:scale-95 shadow-sm"
                     style={{ background: btn.style.bg, color: btn.style.color, border: `1px solid ${btn.style.border}` }}>
                     <span className="text-xl">{btn.icon}</span>{btn.label}
                   </button>
                 ))}
               </div>
-              <button onClick={() => openOverlay(() => setShowSOS(true))} className="w-full py-3 mb-5 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition-all active:scale-95"
+              <button onClick={e => { e.stopPropagation(); setShowMobileMenu(false); setTimeout(() => setShowSOS(true), 50) }} className="w-full py-3 mb-5 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition-all active:scale-95"
                 style={{ background: 'rgba(239,68,68,0.08)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}>🆘 Bantuan Darurat</button>
               {/* Persona */}
               <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: 'var(--text-faint)' }}>Persona Kenopia</p>
               <div className="flex gap-2 mb-5">
                 {(['sahabat', 'psikolog', 'filsuf'] as const).map(p => (
-                  <button key={p} onClick={() => { setPersona(p); setShowMobileMenu(false) }} className="flex-1 py-3.5 rounded-2xl text-xs font-bold flex flex-col items-center gap-1.5 transition-all active:scale-95"
+                  <button key={p} onClick={e => { e.stopPropagation(); setPersona(p); setShowMobileMenu(false) }} className="flex-1 py-3.5 rounded-2xl text-xs font-bold flex flex-col items-center gap-1.5 transition-all active:scale-95"
                     style={{ background: persona === p ? '#3b82f6' : 'var(--surface-2)', color: persona === p ? 'white' : 'var(--text-muted)', border: `1px solid ${persona === p ? 'transparent' : 'var(--border-2)'}`, boxShadow: persona === p ? '0 6px 20px rgba(59,130,246,0.35)' : 'none' }}>
                     <span className="text-xl">{p === 'sahabat' ? '👋' : p === 'psikolog' ? '🩺' : '🧘'}</span>
                     <span>{p === 'sahabat' ? 'Sahabat' : p === 'psikolog' ? 'Psikolog' : 'Filsuf Zen'}</span>
@@ -1411,7 +1403,7 @@ export default function CurhatPage() {
               <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: 'var(--text-faint)' }}>Suara Latar</p>
               <div className="flex gap-2">
                 {(['hujan', 'api', 'alam'] as const).map(a => (
-                  <button key={a} onClick={() => { handlePlayAmbient(ambient === a ? null : a); setShowMobileMenu(false) }} className="flex-1 py-3.5 rounded-2xl text-xs font-bold flex flex-col items-center gap-1.5 transition-all active:scale-95"
+                  <button key={a} onClick={e => { e.stopPropagation(); handlePlayAmbient(ambient === a ? null : a); setShowMobileMenu(false) }} className="flex-1 py-3.5 rounded-2xl text-xs font-bold flex flex-col items-center gap-1.5 transition-all active:scale-95"
                     style={{ background: ambient === a ? '#3b82f6' : 'var(--surface-2)', color: ambient === a ? 'white' : 'var(--text-muted)', border: `1px solid ${ambient === a ? 'transparent' : 'var(--border-2)'}` }}>
                     <span className="text-xl">{a === 'hujan' ? '🌧️' : a === 'api' ? '🔥' : '🍃'}</span>
                     <span>{a === 'hujan' ? 'Hujan' : a === 'api' ? 'Api' : 'Alam'}</span>
@@ -1597,17 +1589,20 @@ export default function CurhatPage() {
                     🎭 {persona === 'sahabat' ? 'Sahabat' : persona === 'psikolog' ? 'Psikolog' : 'Filsuf Zen'} <span className="opacity-40 text-xs">▼</span>
                   </button>
                   {showPersonaDD && (
-                  <div className="absolute right-0 top-full pt-2 w-44" style={{ zIndex: 100 }}>
-                    <div className="rounded-2xl shadow-xl flex flex-col overflow-hidden p-2" style={{ background: dark ? 'rgba(15,23,42,0.95)' : 'rgba(255,255,255,0.97)', border: '1px solid var(--border-2)', backdropFilter: 'blur(20px)' }}>
-                      {(['sahabat', 'psikolog', 'filsuf'] as const).map(p => (
-                        <button key={p} onClick={() => { setPersona(p); setShowPersonaDD(false) }} className="text-left px-4 py-3 text-xs font-semibold rounded-xl transition-all flex items-center gap-2"
-                          style={{ background: persona === p ? 'rgba(59,130,246,0.1)' : 'transparent', color: persona === p ? '#3b82f6' : 'var(--text-muted)' }}>
-                          {p === 'sahabat' ? '👋' : p === 'psikolog' ? '🩺' : '🧘'} {p === 'sahabat' ? 'Sahabat' : p === 'psikolog' ? 'Psikolog' : 'Filsuf Zen'}
-                          {persona === p && <span className="ml-auto text-xs">✓</span>}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                    <>
+                      <div className="fixed inset-0" style={{ zIndex: 90 }} onClick={() => setShowPersonaDD(false)} />
+                      <div className="absolute right-0 top-full mt-2 w-44" style={{ zIndex: 91 }}>
+                        <div className="rounded-2xl shadow-xl flex flex-col overflow-hidden p-2" style={{ background: dark ? 'rgba(15,23,42,0.97)' : 'rgba(255,255,255,0.99)', border: '1px solid var(--border-2)', backdropFilter: 'blur(20px)' }}>
+                          {(['sahabat', 'psikolog', 'filsuf'] as const).map(p => (
+                            <button key={p} onClick={() => { setPersona(p); setShowPersonaDD(false) }} className="text-left px-4 py-3 text-xs font-semibold rounded-xl transition-all flex items-center gap-2"
+                              style={{ background: persona === p ? 'rgba(59,130,246,0.1)' : 'transparent', color: persona === p ? '#3b82f6' : 'var(--text-muted)' }}>
+                              {p === 'sahabat' ? '👋' : p === 'psikolog' ? '🩺' : '🧘'} {p === 'sahabat' ? 'Sahabat' : p === 'psikolog' ? 'Psikolog' : 'Filsuf Zen'}
+                              {persona === p && <span className="ml-auto text-xs">✓</span>}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </>
                   )}
                 </div>
 
@@ -1619,21 +1614,24 @@ export default function CurhatPage() {
                     🎵 {ambient === 'hujan' ? 'Hujan' : ambient === 'api' ? 'Api' : ambient === 'alam' ? 'Alam' : 'Musik'} <span className="opacity-40 text-xs">▼</span>
                   </button>
                   {showAmbientDD && (
-                  <div className="absolute right-0 top-full pt-2 w-48" style={{ zIndex: 100 }}>
-                    <div className="rounded-2xl shadow-xl flex flex-col overflow-hidden p-2" style={{ background: dark ? 'rgba(15,23,42,0.95)' : 'rgba(255,255,255,0.97)', border: '1px solid var(--border-2)', backdropFilter: 'blur(20px)' }}>
-                      {(['hujan', 'api', 'alam'] as const).map(a => (
-                        <button key={a} onClick={() => { handlePlayAmbient(a); setShowAmbientDD(false) }} className="text-left px-4 py-3 text-xs font-semibold rounded-xl transition-all flex items-center gap-2"
-                          style={{ background: ambient === a ? 'rgba(59,130,246,0.1)' : 'transparent', color: ambient === a ? '#3b82f6' : 'var(--text-muted)' }}>
-                          {a === 'hujan' ? '🌧️ Hujan Sore' : a === 'api' ? '🔥 Api Unggun' : '🍃 Suara Alam'}
-                          {ambient === a && <span className="ml-auto text-xs">✓</span>}
-                        </button>
-                      ))}
-                      {ambient && <>
-                        <div className="my-1 mx-3 h-px" style={{ background: 'var(--border-2)' }} />
-                        <button onClick={() => { handlePlayAmbient(null); setShowAmbientDD(false) }} className="text-left px-4 py-3 text-xs font-semibold rounded-xl transition-all" style={{ color: '#ef4444' }}>🔇 Matikan Suara</button>
-                      </>}
-                    </div>
-                  </div>
+                    <>
+                      <div className="fixed inset-0" style={{ zIndex: 90 }} onClick={() => setShowAmbientDD(false)} />
+                      <div className="absolute right-0 top-full mt-2 w-48" style={{ zIndex: 91 }}>
+                        <div className="rounded-2xl shadow-xl flex flex-col overflow-hidden p-2" style={{ background: dark ? 'rgba(15,23,42,0.97)' : 'rgba(255,255,255,0.99)', border: '1px solid var(--border-2)', backdropFilter: 'blur(20px)' }}>
+                          {(['hujan', 'api', 'alam'] as const).map(a => (
+                            <button key={a} onClick={() => { handlePlayAmbient(a); setShowAmbientDD(false) }} className="text-left px-4 py-3 text-xs font-semibold rounded-xl transition-all flex items-center gap-2"
+                              style={{ background: ambient === a ? 'rgba(59,130,246,0.1)' : 'transparent', color: ambient === a ? '#3b82f6' : 'var(--text-muted)' }}>
+                              {a === 'hujan' ? '🌧️ Hujan Sore' : a === 'api' ? '🔥 Api Unggun' : '🍃 Suara Alam'}
+                              {ambient === a && <span className="ml-auto text-xs">✓</span>}
+                            </button>
+                          ))}
+                          {ambient && <>
+                            <div className="my-1 mx-3 h-px" style={{ background: 'var(--border-2)' }} />
+                            <button onClick={() => { handlePlayAmbient(null); setShowAmbientDD(false) }} className="text-left px-4 py-3 text-xs font-semibold rounded-xl transition-all" style={{ color: '#ef4444' }}>🔇 Matikan Suara</button>
+                          </>}
+                        </div>
+                      </div>
+                    </>
                   )}
                 </div>
 
@@ -1643,17 +1641,20 @@ export default function CurhatPage() {
                     style={{ background: 'var(--surface-2)', border: '1px solid var(--border-2)' }}
                     onClick={() => { setShowThemeDD(v => !v); setShowPersonaDD(false); setShowAmbientDD(false) }}>{currentTheme.icon}</button>
                   {showThemeDD && (
-                  <div className="absolute right-0 top-full pt-2 w-40" style={{ zIndex: 100 }}>
-                    <div className="rounded-2xl shadow-xl flex flex-col p-2" style={{ background: dark ? 'rgba(15,23,42,0.95)' : 'rgba(255,255,255,0.97)', border: '1px solid var(--border-2)', backdropFilter: 'blur(20px)' }}>
-                      <p className="text-xs font-bold uppercase tracking-wider px-2 pb-1" style={{ color: 'var(--text-faint)' }}>Tema Latar</p>
-                      {(Object.keys(BG_THEMES) as BgTheme[]).map(key => (
-                        <button key={key} onClick={() => { handleBgThemeChange(key); setShowThemeDD(false) }} className="text-left px-3 py-2 text-xs font-semibold rounded-xl flex items-center gap-2 transition-all"
-                          style={{ background: bgTheme === key ? 'rgba(59,130,246,0.1)' : 'transparent', color: bgTheme === key ? '#3b82f6' : 'var(--text-muted)' }}>
-                          {BG_THEMES[key].icon} {BG_THEMES[key].label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                    <>
+                      <div className="fixed inset-0" style={{ zIndex: 90 }} onClick={() => setShowThemeDD(false)} />
+                      <div className="absolute right-0 top-full mt-2 w-40" style={{ zIndex: 91 }}>
+                        <div className="rounded-2xl shadow-xl flex flex-col p-2" style={{ background: dark ? 'rgba(15,23,42,0.97)' : 'rgba(255,255,255,0.99)', border: '1px solid var(--border-2)', backdropFilter: 'blur(20px)' }}>
+                          <p className="text-xs font-bold uppercase tracking-wider px-2 pb-1" style={{ color: 'var(--text-faint)' }}>Tema Latar</p>
+                          {(Object.keys(BG_THEMES) as BgTheme[]).map(key => (
+                            <button key={key} onClick={() => { handleBgThemeChange(key); setShowThemeDD(false) }} className="text-left px-3 py-2 text-xs font-semibold rounded-xl flex items-center gap-2 transition-all"
+                              style={{ background: bgTheme === key ? 'rgba(59,130,246,0.1)' : 'transparent', color: bgTheme === key ? '#3b82f6' : 'var(--text-muted)' }}>
+                              {BG_THEMES[key].icon} {BG_THEMES[key].label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </>
                   )}
                 </div>
 
