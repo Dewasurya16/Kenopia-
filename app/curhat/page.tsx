@@ -952,6 +952,13 @@ export default function CurhatPage() {
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
+  // ── Unregister stale service workers so users don't need to hard-refresh ──
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(regs => { regs.forEach(r => r.unregister()) })
+    }
+  }, [])
+
 
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [activeMessages, loading, pendingText])
@@ -1202,6 +1209,13 @@ export default function CurhatPage() {
         .hist-group:hover .hist-delete { opacity: 1; }
         .cal-dot { transition: transform 0.3s, box-shadow 0.3s; }
         .cal-dot:hover { transform: scale(1.25) rotate(6deg); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+
+        /* ── Prevent iOS zoom on input focus ── */
+        textarea, input, select { font-size: 16px !important; }
+        @media (min-width: 640px) { textarea { font-size: 1rem !important; } }
+
+        /* ── Prevent double-tap zoom on buttons ── */
+        button, a { touch-action: manipulation; }
 
         /* ── Textarea no-scrollbar ── */
         .chat-input { -ms-overflow-style:none; scrollbar-width:none; }
@@ -1612,8 +1626,36 @@ export default function CurhatPage() {
               </div>
 
               {/* Mobile controls */}
-              <div className="flex md:hidden items-center gap-1 flex-shrink-0 ml-2">
+              <div className="flex md:hidden items-center gap-1 flex-shrink-0 ml-auto">
                 {streakCount >= 2 && <StreakBadge count={streakCount} />}
+
+                {/* Persona dropdown (mobile) */}
+                <div className="relative">
+                  <button onClick={() => { setShowPersonaDD(v => !v); setShowAmbientDD(false); setShowThemeDD(false) }}
+                    className="h-8 px-2.5 rounded-xl flex items-center gap-1 text-xs font-bold transition-all active:scale-95"
+                    style={{ background: 'var(--surface-2)', border: '1px solid var(--border-2)', color: 'var(--text-muted)' }}>
+                    <span>{persona === 'sahabat' ? '👋' : persona === 'psikolog' ? '🩺' : '🧘'}</span>
+                    <span className="text-xs opacity-50">▾</span>
+                  </button>
+                  {showPersonaDD && (
+                    <>
+                      <div className="fixed inset-0" style={{ zIndex: 90 }} onClick={() => setShowPersonaDD(false)} />
+                      <div className="absolute right-0 top-full mt-2 w-40" style={{ zIndex: 91 }}>
+                        <div className="rounded-2xl shadow-xl flex flex-col overflow-hidden p-2" style={{ background: dark ? 'rgba(15,23,42,0.97)' : 'rgba(255,255,255,0.99)', border: '1px solid var(--border-2)', backdropFilter: 'blur(20px)' }}>
+                          <p className="text-xs font-bold uppercase tracking-wider px-2 pb-1" style={{ color: 'var(--text-faint)' }}>Persona</p>
+                          {(['sahabat', 'psikolog', 'filsuf'] as const).map(p => (
+                            <button key={p} onClick={() => { setPersona(p); setShowPersonaDD(false) }}
+                              className="text-left px-3 py-2.5 text-xs font-semibold rounded-xl transition-all flex items-center gap-2"
+                              style={{ background: persona === p ? 'rgba(59,130,246,0.1)' : 'transparent', color: persona === p ? '#3b82f6' : 'var(--text-muted)' }}>
+                              {p === 'sahabat' ? '👋' : p === 'psikolog' ? '🩺' : '🧘'} {p === 'sahabat' ? 'Sahabat' : p === 'psikolog' ? 'Psikolog' : 'Filsuf Zen'}
+                              {persona === p && <span className="ml-auto">✓</span>}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
 
                 {/* Zen mode */}
                 <button onClick={() => setZenMode(true)} className="w-8 h-8 rounded-xl flex items-center justify-center text-base transition-all active:scale-95"
@@ -1621,7 +1663,7 @@ export default function CurhatPage() {
 
                 {/* Musik dropdown (mobile) */}
                 <div className="relative">
-                  <button onClick={() => { setShowAmbientDD(v => !v); setShowThemeDD(false) }}
+                  <button onClick={() => { setShowAmbientDD(v => !v); setShowPersonaDD(false); setShowThemeDD(false) }}
                     className="w-8 h-8 rounded-xl flex items-center justify-center text-base transition-all active:scale-95"
                     style={{ background: ambient ? '#3b82f6' : 'var(--surface-2)', border: `1px solid ${ambient ? 'transparent' : 'var(--border-2)'}` }}>
                     {ambient === 'hujan' ? '🌧️' : ambient === 'api' ? '🔥' : ambient === 'alam' ? '🍃' : '🎵'}
@@ -1651,7 +1693,7 @@ export default function CurhatPage() {
 
                 {/* Theme dropdown (mobile) */}
                 <div className="relative">
-                  <button onClick={() => { setShowThemeDD(v => !v); setShowAmbientDD(false) }}
+                  <button onClick={() => { setShowThemeDD(v => !v); setShowPersonaDD(false); setShowAmbientDD(false) }}
                     className="w-8 h-8 rounded-xl flex items-center justify-center text-base transition-all active:scale-95"
                     style={{ background: 'var(--surface-2)', border: '1px solid var(--border-2)' }}>
                     {currentTheme.icon}
@@ -1777,8 +1819,8 @@ export default function CurhatPage() {
                   </button>
                 </div>
 
-                <textarea ref={textareaRef} className="chat-input flex-1 w-full min-w-0 px-3 sm:px-4 py-3 text-sm sm:text-base leading-relaxed bg-transparent border-none outline-none resize-none transition-all"
-                  style={{ minHeight: '44px', maxHeight: '160px', color: 'var(--text)' }}
+                <textarea ref={textareaRef} className="chat-input flex-1 w-full min-w-0 px-3 sm:px-4 py-3 leading-relaxed bg-transparent border-none outline-none resize-none transition-all"
+                  style={{ minHeight: '44px', maxHeight: '160px', color: 'var(--text)', fontSize: '16px' }}
                   placeholder={isListening ? '🎙️ Merekam...' : 'Ketik pesanmu di sini...'}
                   rows={1} value={input} onChange={handleInputChange} onKeyDown={handleKeyDown} disabled={loading} />
 
