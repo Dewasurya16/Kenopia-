@@ -90,24 +90,30 @@ interface SpeechRecognitionErrorEvent extends Event { error: string }
 function EmotionBadge({ emotion }: { emotion: EmotionKey }) {
   const meta = EMOTIONS[emotion]
   return (
-    <div className="mx-auto my-3 px-5 py-2 rounded-full text-xs font-bold flex items-center gap-2 shadow-sm anim-slide-up backdrop-blur-sm"
-      style={{ background: `${meta.color}15`, color: meta.color, border: `1.5px dashed ${meta.color}50` }}>
-      <span className="text-base">{meta.emoji}</span>
-      <span className="tracking-wide uppercase">{meta.label} terdeteksi</span>
+    <div className="mx-auto my-2 px-5 py-2 rounded-full text-xs font-bold flex items-center gap-2 anim-slide-up"
+      style={{
+        background: `${meta.color}12`,
+        color: meta.color,
+        border: `1.5px solid ${meta.color}35`,
+        backdropFilter: 'blur(8px)',
+        boxShadow: `0 2px 12px ${meta.color}20`,
+      }}>
+      <span className="text-sm">{meta.emoji}</span>
+      <span className="tracking-wider uppercase text-[10px]">{meta.label} terdeteksi</span>
     </div>
   )
 }
 
 function TypingIndicator() {
   return (
-    <div className="flex items-end gap-3 anim-slide-up mb-6">
-      <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm flex-shrink-0 font-bold text-white shadow-lg"
+    <div className="flex items-end gap-3 anim-slide-up mb-5">
+      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-sm flex-shrink-0 font-black text-white shadow-lg"
         style={{ background: 'linear-gradient(135deg,#3b82f6,#ec4899)' }}>K</div>
-      <div className="px-6 py-4 flex items-center gap-2 h-14 shadow-sm"
-        style={{ background: 'var(--surface-2)', borderRadius: '20px 20px 20px 6px', border: '1px solid var(--border-2)' }}>
-        {[0, 150, 300].map(d => (
+      <div className="px-5 py-3.5 flex items-center gap-1.5 shadow-sm"
+        style={{ background: 'var(--surface-2)', borderRadius: '20px 20px 20px 6px', border: '1px solid var(--border-2)', minHeight: '48px' }}>
+        {[0, 160, 320].map(d => (
           <div key={d} className="w-2.5 h-2.5 rounded-full"
-            style={{ background: '#3b82f6', animation: `kBounce 1s ${d}ms ease-in-out infinite` }} />
+            style={{ background: 'linear-gradient(135deg,#3b82f6,#6366f1)', animation: `kBounce 1.1s ${d}ms ease-in-out infinite` }} />
         ))}
       </div>
     </div>
@@ -154,26 +160,33 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
   }
 
   return (
-    <div className="flex flex-col gap-3 anim-slide-up mb-4 msg-group">
+    <div className="flex flex-col gap-2 anim-slide-up mb-6 msg-group">
+      {/* User bubble */}
       <div className="flex justify-end">
-        <div className="max-w-[85%] sm:max-w-[75%] relative">
-          <div className="px-5 sm:px-6 py-3 sm:py-4 text-sm leading-relaxed shadow-sm"
-            style={{ background: 'linear-gradient(135deg,#3b82f6,#6366f1)', color: 'white', borderRadius: '20px 20px 6px 20px' }}>
+        <div className="max-w-[85%] sm:max-w-[75%]">
+          <div className="px-5 sm:px-6 py-3.5 sm:py-4 text-sm leading-relaxed bubble-user font-medium">
             {msg.userMessage}
           </div>
-          <p className="text-right text-xs mt-1.5 font-medium msg-time absolute -bottom-5 right-1" style={{ color: 'var(--text-faint)' }}>{timeStr}</p>
+          {/* BUG FIX: timestamp not absolute, proper spacing */}
+          <p className="text-right text-xs mt-1.5 font-medium msg-time pr-1" style={{ color: 'var(--text-faint)' }}>{timeStr}</p>
         </div>
       </div>
+
+      {/* Emotion badge */}
       <EmotionBadge emotion={msg.emotion} />
-      <div className="flex items-end gap-2 sm:gap-3 mt-2">
-        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-sm flex-shrink-0 font-bold text-white shadow-lg"
+
+      {/* AI bubble */}
+      <div className="flex items-end gap-2 sm:gap-3">
+        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-sm flex-shrink-0 font-bold text-white shadow-lg flex-none"
           style={{ background: 'linear-gradient(135deg,#3b82f6,#ec4899)' }}>K</div>
-        <div className="max-w-[85%] sm:max-w-[75%] relative">
-          <div className="px-5 sm:px-6 py-3 sm:py-4 text-sm leading-relaxed whitespace-pre-wrap shadow-sm relative"
-            style={{ background: 'var(--surface-2)', color: 'var(--text)', borderRadius: '20px 20px 20px 6px', border: '1px solid var(--border-2)' }}>
-            {msg.aiResponse}
+        <div className="max-w-[85%] sm:max-w-[75%] flex-1 min-w-0">
+          <div className="relative">
+            <div className="px-5 sm:px-6 py-3.5 sm:py-4 text-sm leading-relaxed whitespace-pre-wrap bubble-ai pr-10 sm:pr-12">
+              {msg.aiResponse}
+            </div>
+            {/* Speak button — inside bubble, not overflowing */}
             <button onClick={handleSpeak}
-              className="absolute -right-2 -bottom-2 sm:-right-3 sm:-bottom-3 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs shadow-md transition-all"
+              className="absolute right-2 bottom-2 w-7 h-7 rounded-full flex items-center justify-center text-xs shadow-md transition-all hover:scale-110 active:scale-95"
               style={{
                 background: isPlaying ? '#3b82f6' : 'var(--surface)',
                 color: isPlaying ? 'white' : 'var(--text-faint)',
@@ -183,7 +196,8 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
               {isPlaying ? '⏹' : '🔊'}
             </button>
           </div>
-          <p className="text-xs mt-1.5 ml-2 font-medium msg-time absolute -bottom-5 left-1" style={{ color: 'var(--text-faint)' }}>{timeStr}</p>
+          {/* BUG FIX: timestamp inline, not absolute overflowing */}
+          <p className="text-xs mt-1.5 ml-1 font-medium msg-time" style={{ color: 'var(--text-faint)' }}>{timeStr}</p>
         </div>
       </div>
     </div>
@@ -197,24 +211,24 @@ function HistoryItem({ session, active, onClick, onDelete }: { session: ChatSess
   return (
     <div className="relative hist-group">
       <button onClick={onClick}
-        className="w-full text-left px-4 py-3.5 rounded-3xl transition-all duration-300"
+        className="w-full text-left px-4 py-3.5 rounded-2xl transition-all duration-300"
         style={{
           background: active ? 'var(--surface)' : 'transparent',
-          border: `1px solid ${active ? 'var(--border-2)' : 'transparent'}`,
-          boxShadow: active ? '0 4px 16px rgba(0,0,0,0.05)' : 'none',
-          transform: active ? 'scale(1.02)' : 'scale(1)',
+          border: `1.5px solid ${active ? 'var(--border-2)' : 'transparent'}`,
+          boxShadow: active ? '0 4px 20px rgba(0,0,0,0.06)' : 'none',
+          transform: active ? 'scale(1.01)' : 'scale(1)',
         }}>
-        <div className="flex items-center gap-2.5 mb-2 pr-8">
-          <span className="text-xl">{meta.emoji}</span>
+        <div className="flex items-center gap-2.5 mb-1.5 pr-9">
+          <span className="text-lg">{meta.emoji}</span>
           <span className="text-xs font-bold tracking-wide" style={{ color: meta.color }}>{meta.label}</span>
           <span className="text-xs font-semibold ml-auto" style={{ color: 'var(--text-faint)' }}>{label}</span>
         </div>
-        <p className="text-xs truncate leading-relaxed font-medium pr-8" style={{ color: 'var(--text-muted)' }}>"{session.title}"</p>
+        <p className="text-xs truncate leading-relaxed pr-9" style={{ color: 'var(--text-muted)' }}>"{session.title}"</p>
       </button>
       {onDelete && (
         <button onClick={onDelete}
-          className="absolute top-1/2 -translate-y-1/2 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all hist-delete"
-          style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fecaca' }}>✕</button>
+          className="absolute top-1/2 -translate-y-1/2 right-2.5 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all hist-delete hover:scale-110 active:scale-90"
+          style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}>✕</button>
       )}
     </div>
   )
@@ -800,12 +814,18 @@ function StreakBadge({ count }: { count: number }) {
 
 function QuickReplies({ emotion, onSelect }: { emotion: EmotionKey; onSelect: (text: string) => void }) {
   const replies = QUICK_REPLIES[emotion] || []
+  const meta = EMOTIONS[emotion]
   return (
-    <div className="flex flex-wrap justify-center gap-2 my-3 anim-fade-in px-4">
-      {replies.map(reply => (
+    <div className="flex flex-wrap justify-center gap-2 my-4 anim-fade-in px-2">
+      {replies.map((reply, i) => (
         <button key={reply} onClick={() => onSelect(reply)}
-          className="px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm hover:shadow-md"
-          style={{ background: 'var(--surface)', color: 'var(--text-muted)', border: '1px solid var(--border-2)', backdropFilter: 'blur(12px)' }}>
+          className="quick-chip px-4 py-2 rounded-full text-xs font-semibold shadow-sm"
+          style={{
+            background: `${meta.color}10`,
+            color: meta.color,
+            border: `1.5px solid ${meta.color}30`,
+            animationDelay: `${i * 60}ms`,
+          }}>
           {reply}
         </button>
       ))}
@@ -1170,16 +1190,23 @@ export default function CurhatPage() {
   return (
     <>
       <style>{`
+        /* ── Google Fonts ── */
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Lora:ital,wght@0,600;1,400;1,500&display=swap');
+
         /* ── CSS Custom Properties ── */
         .kp-app { ${Object.entries(cssVars).map(([k, v]) => `${k}:${v}`).join(';')} }
 
-        /* ── Base ── */
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(156,163,175,0.3); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(156,163,175,0.5); }
+        /* ── Global Font ── */
+        .kp-app, .kp-app * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .font-serif { font-family: 'Lora', Georgia, serif !important; }
 
-        /* ── Keyframes (all animations self-contained) ── */
+        /* ── Base ── */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(156,163,175,0.25); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(156,163,175,0.45); }
+
+        /* ── Keyframes ── */
         @keyframes kBounce  { 0%,100%{transform:translateY(0);opacity:1;} 50%{transform:translateY(-6px);opacity:.5;} }
         @keyframes kBounce2 { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-8px);} }
         @keyframes kPulse   { 0%,100%{opacity:1;} 50%{opacity:.4;} }
@@ -1193,26 +1220,39 @@ export default function CurhatPage() {
         @keyframes kConfetti { 0%{transform:translateY(-20px) rotate(0deg);opacity:1;} 100%{transform:translateY(100vh) rotate(720deg);opacity:0;} }
         @keyframes kSheetUp { from{opacity:0;transform:translateY(100%);} to{opacity:1;transform:translateY(0);} }
         @keyframes kMenuIn  { from{opacity:0;transform:translateY(-8px) scale(0.97);} to{opacity:1;transform:translateY(0) scale(1);} }
+        @keyframes kGlow    { 0%,100%{box-shadow:0 0 20px rgba(59,130,246,0.3);} 50%{box-shadow:0 0 40px rgba(59,130,246,0.6);} }
+        @keyframes kShimmer { 0%{background-position:-200% 0;} 100%{background-position:200% 0;} }
 
         /* ── Utility animation classes ── */
         .anim-fade-in  { animation: kFadeIn  0.35s ease both; }
-        .anim-slide-up { animation: kSlideUp 0.4s cubic-bezier(0.22,1,0.36,1) both; }
+        .anim-slide-up { animation: kSlideUp 0.45s cubic-bezier(0.22,1,0.36,1) both; }
         .anim-pop-in   { animation: kPopIn   0.5s cubic-bezier(0.34,1.56,0.64,1) both; }
         .anim-orb-slow { animation: kOrbSlow 18s ease-in-out infinite; }
         .sheet-enter   { animation: kSheetUp 0.3s cubic-bezier(0.32,0.72,0,1) forwards; }
         .menu-enter    { animation: kMenuIn  0.18s ease-out forwards; }
 
-        /* ── Message group hover ── */
-        .msg-group .msg-time { opacity: 0; transition: opacity 0.2s; }
+        /* ── Message timestamps ── */
+        .msg-group .msg-time { opacity: 0; transition: opacity 0.25s; }
         .msg-group:hover .msg-time { opacity: 1; }
+        /* BUG FIX: Show timestamps on touch/mobile devices (no hover support) */
+        @media (hover: none) {
+          .msg-group .msg-time { opacity: 0.55; }
+        }
+
+        /* ── History delete button ── */
         .hist-group .hist-delete { opacity: 0; transition: opacity 0.2s; }
         .hist-group:hover .hist-delete { opacity: 1; }
+        /* BUG FIX: Always show delete on touch devices */
+        @media (hover: none) {
+          .hist-group .hist-delete { opacity: 0.7; }
+        }
+
+        /* ── Emotion calendar dots ── */
         .cal-dot { transition: transform 0.3s, box-shadow 0.3s; }
-        .cal-dot:hover { transform: scale(1.25) rotate(6deg); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .cal-dot:hover { transform: scale(1.3) rotate(6deg); box-shadow: 0 4px 14px rgba(0,0,0,0.2); }
 
         /* ── Prevent iOS zoom on input focus ── */
         textarea, input, select { font-size: 16px !important; }
-        @media (min-width: 640px) { textarea { font-size: 1rem !important; } }
 
         /* ── Prevent double-tap zoom on buttons ── */
         button, a { touch-action: manipulation; }
@@ -1228,6 +1268,69 @@ export default function CurhatPage() {
         /* ── z-index layers ── */
         .z-85  { z-index: 85; }
         .z-100 { z-index: 100; }
+
+        /* ── BUG FIX: Desktop sidebar always visible via CSS (overrides JS transform) ── */
+        @media (min-width: 1024px) {
+          .kp-sidebar { transform: translateX(0) !important; position: relative !important; }
+        }
+
+        /* ── iPhone safe area insets ── */
+        .safe-top    { padding-top: max(12px, env(safe-area-inset-top)); }
+        .safe-bottom { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+        .safe-bottom-xs { padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+
+        /* ── Message bubble polish ── */
+        .bubble-user {
+          background: linear-gradient(135deg, #3b82f6, #6366f1);
+          color: white;
+          border-radius: 22px 22px 6px 22px;
+          box-shadow: 0 4px 16px rgba(59,130,246,0.28), 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .bubble-ai {
+          background: var(--surface-2);
+          color: var(--text);
+          border-radius: 22px 22px 22px 6px;
+          border: 1px solid var(--border-2);
+          box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+        }
+
+        /* ── Quick reply chips ── */
+        .quick-chip {
+          backdrop-filter: blur(12px);
+          transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        .quick-chip:hover { transform: scale(1.06) translateY(-1px); }
+        .quick-chip:active { transform: scale(0.96); }
+
+        /* ── Input area glass ── */
+        .input-glass {
+          backdrop-filter: blur(28px);
+          -webkit-backdrop-filter: blur(28px);
+          transition: box-shadow 0.3s;
+        }
+        .input-glass:focus-within {
+          box-shadow: 0 0 0 2px rgba(59,130,246,0.22), 0 12px 48px rgba(0,0,0,0.08) !important;
+        }
+
+        /* ── Feature grid buttons ── */
+        .feature-btn {
+          transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        .feature-btn:hover { transform: scale(1.08) translateY(-2px); }
+        .feature-btn:active { transform: scale(0.94); }
+
+        /* ── Sidebar smooth transitions ── */
+        .kp-sidebar { transition: transform 0.45s cubic-bezier(0.32,0.72,0,1); }
+
+        /* ── Better focus rings ── */
+        button:focus-visible { outline: 2px solid rgba(59,130,246,0.6); outline-offset: 2px; }
+        textarea:focus-visible, input:focus-visible { outline: none; }
+
+        /* ── Affirmation card shimmer ── */
+        .affirmation-shimmer {
+          background: linear-gradient(90deg, var(--surface) 0%, var(--surface-2) 50%, var(--surface) 100%);
+          background-size: 200% auto;
+        }
       `}</style>
 
       <div className="kp-app flex h-screen overflow-hidden relative transition-colors duration-1000" style={{ background: mainBgColor } as React.CSSProperties}>
@@ -1380,22 +1483,26 @@ export default function CurhatPage() {
 
         {/* ── SIDEBAR ── */}
         {!zenMode && (
-          <aside className="fixed lg:relative z-40 lg:z-auto w-[280px] sm:w-[300px] h-full flex flex-col transition-transform duration-500 ease-out"
+          <aside className="kp-sidebar fixed lg:relative z-40 lg:z-auto w-[280px] sm:w-[300px] h-full flex flex-col"
             style={{
               transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
-              background: dark ? 'rgba(9,5,30,0.75)' : 'rgba(255,255,255,0.75)',
+              background: dark ? 'rgba(9,5,30,0.82)' : 'rgba(255,255,255,0.85)',
               backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
-              borderRight: '1px solid var(--border-2)', boxShadow: '2px 0 40px rgba(0,0,0,0.1)',
-            }}
-            // Desktop: always visible
-            ref={node => { if (node) { if (window.innerWidth >= 1024) node.style.transform = 'translateX(0)' } }}>
+              borderRight: '1px solid var(--border-2)', boxShadow: '2px 0 48px rgba(0,0,0,0.12)',
+            }}>
 
             <div className="p-5 sm:p-6 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border-2)' }}>
-              <Link href="/" className="flex items-center gap-3 transition-transform hover:scale-105">
-                <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-md" style={{ background: 'linear-gradient(135deg,#3b82f6,#ec4899)' }}>K</div>
-                <span className="text-xl font-bold" style={{ color: 'var(--text)' }}>Kenopia</span>
+              <Link href="/" className="flex items-center gap-3 transition-all hover:opacity-80">
+                <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-base font-black text-white shadow-lg" 
+                  style={{ background: 'linear-gradient(135deg,#3b82f6,#ec4899)', boxShadow: '0 4px 16px rgba(59,130,246,0.35)' }}>K</div>
+                <div>
+                  <span className="text-lg font-black tracking-tight" style={{ color: 'var(--text)' }}>Kenopia</span>
+                  <div className="text-xs font-medium" style={{ color: 'var(--text-faint)' }}>Ruang curhatmu 💙</div>
+                </div>
               </Link>
-              <button className="lg:hidden w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110" style={{ background: 'var(--surface-2)', color: 'var(--text-faint)' }} onClick={() => setSidebarOpen(false)}>✕</button>
+              <button className="lg:hidden w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:scale-110 active:scale-95" 
+                style={{ background: 'var(--surface-2)', color: 'var(--text-faint)', border: '1px solid var(--border-2)' }} 
+                onClick={() => setSidebarOpen(false)}>✕</button>
             </div>
 
             <div className="p-4 sm:p-5">
@@ -1431,9 +1538,10 @@ export default function CurhatPage() {
                   { icon: '✉️', label: 'Surat', fn: () => openOverlay(() => setShowFutureSelf(true)), color: '#16a34a' },
                 ].map(btn => (
                   <button key={btn.label} onClick={btn.fn}
-                    className="py-2.5 rounded-xl text-xs font-bold flex flex-col items-center gap-1 transition-all hover:scale-105 shadow-sm"
-                    style={{ background: `${btn.color}12`, color: btn.color, border: `1.5px dashed ${btn.color}35` }}>
-                    <span className="text-xl">{btn.icon}</span>{btn.label}
+                    className="feature-btn py-3 rounded-2xl text-xs font-bold flex flex-col items-center gap-1.5 shadow-sm"
+                    style={{ background: `${btn.color}12`, color: btn.color, border: `1.5px solid ${btn.color}30` }}>
+                    <span className="text-xl">{btn.icon}</span>
+                    <span className="leading-tight">{btn.label}</span>
                   </button>
                 ))}
               </div>
@@ -1516,12 +1624,12 @@ export default function CurhatPage() {
 
           {/* ── Header ── */}
           {!zenMode && (
-            <header className="flex items-center justify-between px-4 md:px-6 py-3 flex-shrink-0"
-              style={{ background: dark ? 'rgba(9,5,30,0.5)' : 'rgba(255,255,255,0.55)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', borderBottom: '1px solid var(--border-2)', boxShadow: '0 1px 0 rgba(0,0,0,0.04)', zIndex: 30, position: 'relative' }}>
+            <header className="flex items-center justify-between px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 flex-shrink-0 safe-top"
+              style={{ background: dark ? 'rgba(9,5,30,0.6)' : 'rgba(255,255,255,0.7)', backdropFilter: 'blur(28px)', WebkitBackdropFilter: 'blur(28px)', borderBottom: '1px solid var(--border-2)', zIndex: 30, position: 'relative' }}>
               <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
-                <button className="lg:hidden w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 text-lg"
-                  style={{ background: 'var(--surface-2)', border: '1px solid var(--border-2)', color: 'var(--text-faint)' }}
-                  onClick={() => setSidebarOpen(true)}>☰</button>
+                <button className="lg:hidden w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 text-lg flex-shrink-0"
+                  style={{ background: 'var(--surface-2)', border: '1px solid var(--border-2)', color: 'var(--text-muted)' }}
+                  onClick={() => setSidebarOpen(true)} aria-label="Buka menu">☰</button>
                 <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold text-white shadow-lg"
                   style={{ background: 'linear-gradient(135deg,#3b82f6,#ec4899)' }}>K</div>
                 <div className="min-w-0">
@@ -1729,32 +1837,45 @@ export default function CurhatPage() {
           {/* ── Chat body ── */}
           <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6 sm:py-8 flex flex-col gap-5 sm:gap-6 relative" style={{ zIndex: 10 }}>
             {activeMessages.length === 0 && !pendingText && (
-              <div className="flex flex-col items-center justify-center flex-1 gap-5 sm:gap-6 text-center py-8 sm:py-12 anim-fade-in">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl flex items-center justify-center text-4xl sm:text-5xl shadow-xl"
-                  style={{ background: 'linear-gradient(135deg,rgba(59,130,246,0.9),rgba(236,72,153,0.9))', boxShadow: '0 20px 50px rgba(59,130,246,0.25)' }}>🤍</div>
-
-                <div className="px-6 py-4 rounded-2xl max-w-[300px] sm:max-w-sm" style={{ background: 'var(--surface)', border: '1px solid var(--border-2)' }}>
-                  <span className="text-2xl block mb-2">{todayAffirmation.emoji}</span>
-                  <p className="text-sm leading-relaxed font-medium italic" style={{ color: 'var(--text-muted)' }}>"{todayAffirmation.text}"</p>
+              <div className="flex flex-col items-center justify-center flex-1 gap-5 sm:gap-6 text-center py-6 sm:py-10 anim-fade-in">
+                {/* Logo hero */}
+                <div className="relative">
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl flex items-center justify-center text-4xl sm:text-5xl shadow-2xl"
+                    style={{ background: 'linear-gradient(135deg,#3b82f6,#ec4899)', boxShadow: '0 24px 64px rgba(59,130,246,0.3), 0 8px 24px rgba(236,72,153,0.2)' }}>🤍</div>
+                  <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-xl flex items-center justify-center text-base shadow-lg"
+                    style={{ background: 'linear-gradient(135deg,#f59e0b,#ef4444)' }}>✨</div>
                 </div>
 
+                {/* Affirmation card */}
+                <div className="px-6 py-5 rounded-2xl max-w-[320px] sm:max-w-sm shadow-sm"
+                  style={{ background: 'var(--surface)', border: '1px solid var(--border-2)', backdropFilter: 'blur(12px)' }}>
+                  <span className="text-2xl block mb-2.5">{todayAffirmation.emoji}</span>
+                  <p className="text-sm leading-loose font-serif" style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>"{todayAffirmation.text}"</p>
+                </div>
+
+                {/* Greeting */}
                 <div>
-                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 sm:mb-3" style={{ color: 'var(--text)' }}>Halo {userName || 'Teman'}, aku Kenopia</h2>
-                  <p className="max-w-[300px] sm:max-w-lg text-sm sm:text-base leading-relaxed mx-auto" style={{ color: 'var(--text-faint)' }}>
-                    Ini ruang amanmu. Ketikkan apa yang sedang kamu rasakan, tanpa penilaian.
+                  <h2 className="text-2xl sm:text-3xl font-black mb-2 tracking-tight" style={{ color: 'var(--text)' }}>
+                    Halo <span style={{ color: '#3b82f6' }}>{userName || 'Teman'}</span>, aku Kenopia
+                  </h2>
+                  <p className="max-w-[300px] sm:max-w-md text-sm sm:text-[15px] leading-relaxed mx-auto" style={{ color: 'var(--text-faint)' }}>
+                    Ini ruang amanmu. Ceritakan apa yang sedang kamu rasakan tanpa rasa takut, tanpa penilaian.
                   </p>
                 </div>
 
-                <button onClick={handleDrawPromptCard} className="px-6 py-3 rounded-full text-sm font-bold transition-all shadow-lg hover:scale-105 active:scale-95 flex items-center gap-2"
-                  style={{ background: 'var(--surface)', color: '#3b82f6', border: '2px solid rgba(59,130,246,0.3)', boxShadow: '0 6px 20px rgba(59,130,246,0.15)' }}>
+                {/* Reflection card button */}
+                <button onClick={handleDrawPromptCard}
+                  className="px-7 py-3.5 rounded-full text-sm font-bold transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2"
+                  style={{ background: 'var(--surface)', color: '#3b82f6', border: '2px solid rgba(59,130,246,0.25)', boxShadow: '0 6px 24px rgba(59,130,246,0.13)' }}>
                   🃏 Ambil Kartu Refleksi
                 </button>
 
-                <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mt-2 max-w-2xl px-2">
+                {/* Emotion starter chips */}
+                <div className="flex flex-wrap justify-center gap-2 sm:gap-2.5 mt-1 max-w-2xl px-3">
                   {Object.values(EMOTIONS).map((e, idx) => (
                     <button key={e.label} onClick={() => { setInput(`Aku merasa ${e.label.toLowerCase()} hari ini karena... `); textareaRef.current?.focus() }}
-                      className="px-4 sm:px-5 py-2 sm:py-3 rounded-full text-xs sm:text-sm font-bold transition-all hover:-translate-y-1 active:translate-y-0 shadow-sm hover:shadow-md anim-pop-in"
-                      style={{ background: `${e.color}15`, color: e.color, border: `1.5px solid ${e.color}30`, animationDelay: `${idx * 80}ms` }}>
+                      className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all hover:-translate-y-1 hover:shadow-md active:translate-y-0 anim-pop-in"
+                      style={{ background: `${e.color}15`, color: e.color, border: `1.5px solid ${e.color}35`, animationDelay: `${idx * 80}ms` }}>
                       {e.emoji} {e.label}
                     </button>
                   ))}
@@ -1784,7 +1905,7 @@ export default function CurhatPage() {
           </div>
 
           {/* ── Input Area ── */}
-          <div className="flex-shrink-0 p-3 sm:p-4 md:p-6 relative" style={{ zIndex: 20 }}>
+          <div className="flex-shrink-0 px-3 sm:px-4 md:px-6 pt-3 pb-0 safe-bottom relative" style={{ zIndex: 20 }}>
             <div className="relative z-10 max-w-4xl mx-auto">
               {voiceHint && (
                 <div className="max-w-max mx-auto mb-3 px-6 py-2 rounded-full text-xs font-bold text-center anim-fade-in shadow-md flex items-center gap-2"
@@ -1807,8 +1928,8 @@ export default function CurhatPage() {
               )}
 
               {/* Input box */}
-              <div className="flex items-end gap-2 p-2 rounded-3xl focus-within:ring-2 focus-within:ring-blue-300/30 transition-all"
-                style={{ background: dark ? 'rgba(9,5,30,0.65)' : 'rgba(255,255,255,0.75)', backdropFilter: 'blur(24px)', border: '1px solid var(--border-2)', boxShadow: '0 8px 40px rgba(0,0,0,0.06)' }}>
+              <div className="input-glass flex items-end gap-2 p-2 rounded-3xl"
+                style={{ background: dark ? 'rgba(9,5,30,0.7)' : 'rgba(255,255,255,0.85)', border: '1.5px solid var(--border-2)', boxShadow: '0 8px 40px rgba(0,0,0,0.07)' }}>
                 <div className="flex items-end gap-1 pb-1 pl-1 flex-shrink-0">
                   {voiceSupported && <MicButton isListening={isListening} onClick={toggleVoice} disabled={loading} />}
                   <button onClick={() => { const cycle = [null, 'hujan', 'api', 'alam'] as const; const idx = cycle.indexOf(ambient as any); handlePlayAmbient(cycle[(idx + 1) % cycle.length]) }}
@@ -1843,8 +1964,8 @@ export default function CurhatPage() {
                 </div>
               )}
 
-              <p className="text-center text-xs font-bold mt-2.5 tracking-widest opacity-50 uppercase flex items-center justify-center gap-1.5" style={{ color: 'var(--text-faint)' }}>
-                🔒 Privasi 100% Aman · Kenopia tidak membagikan datamu
+              <p className="text-center text-xs font-semibold mt-2 pb-1 tracking-wide opacity-40 flex items-center justify-center gap-1.5" style={{ color: 'var(--text-faint)' }}>
+                🔒 Privasi 100% aman · Kenopia tidak menyimpan atau membagikan datamu
               </p>
             </div>
           </div>
