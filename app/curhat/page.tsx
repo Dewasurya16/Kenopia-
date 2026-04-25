@@ -850,6 +850,9 @@ export default function CurhatPage() {
   const [showGratitude, setShowGratitude] = useState(false)
   const [showInsight, setShowInsight] = useState(false)
   const [showMobileMenu, setShowMobileMenu] = useState(false)
+  const [showPersonaDD, setShowPersonaDD] = useState(false)
+  const [showAmbientDD, setShowAmbientDD] = useState(false)
+  const [showThemeDD, setShowThemeDD] = useState(false)
   const [showMoodCheckin, setShowMoodCheckin] = useState(false)
   const [dailyMoodValue, setDailyMoodValue] = useState<number | null>(null)
   const [streakCount, setStreakCount] = useState(0)
@@ -876,6 +879,9 @@ export default function CurhatPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const exportRef = useRef<HTMLDivElement>(null)
   const mobileMenuRef = useRef<HTMLDivElement>(null)
+  const personaDDRef = useRef<HTMLDivElement>(null)
+  const ambientDDRef = useRef<HTMLDivElement>(null)
+  const themeDDRef = useRef<HTMLDivElement>(null)
 
   const activeMessages = useMemo(() => sessions.find(s => s.id === activeSessionId)?.messages || [], [sessions, activeSessionId])
   const allMessages = useMemo(() => sessions.flatMap(s => s.messages), [sessions])
@@ -942,6 +948,16 @@ export default function CurhatPage() {
 
   useEffect(() => {
     const handler = (e: MouseEvent) => { if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target as Node)) setShowMobileMenu(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (personaDDRef.current && !personaDDRef.current.contains(e.target as Node)) setShowPersonaDD(false)
+      if (ambientDDRef.current && !ambientDDRef.current.contains(e.target as Node)) setShowAmbientDD(false)
+      if (themeDDRef.current && !themeDDRef.current.contains(e.target as Node)) setShowThemeDD(false)
+    }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [])
@@ -1548,7 +1564,7 @@ export default function CurhatPage() {
           {/* ── Header ── */}
           {!zenMode && (
             <header className="flex items-center justify-between px-4 md:px-6 py-3 flex-shrink-0"
-              style={{ background: dark ? 'rgba(9,5,30,0.5)' : 'rgba(255,255,255,0.55)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', borderBottom: '1px solid var(--border-2)', boxShadow: '0 1px 0 rgba(0,0,0,0.04)' }}>
+              style={{ background: dark ? 'rgba(9,5,30,0.5)' : 'rgba(255,255,255,0.55)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', borderBottom: '1px solid var(--border-2)', boxShadow: '0 1px 0 rgba(0,0,0,0.04)', zIndex: 30, position: 'relative' }}>
               <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
                 <button className="lg:hidden w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 text-lg"
                   style={{ background: 'var(--surface-2)', border: '1px solid var(--border-2)', color: 'var(--text-faint)' }}
@@ -1574,15 +1590,17 @@ export default function CurhatPage() {
                 {streakCount >= 2 && <StreakBadge count={streakCount} />}
 
                 {/* Persona dropdown */}
-                <div className="relative group">
+                <div className="relative" ref={personaDDRef}>
                   <button className="px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 transition-all shadow-sm hover:scale-105"
-                    style={{ background: 'var(--surface-2)', border: '1px solid var(--border-2)', color: 'var(--text-muted)' }}>
+                    style={{ background: 'var(--surface-2)', border: '1px solid var(--border-2)', color: 'var(--text-muted)' }}
+                    onClick={() => { setShowPersonaDD(v => !v); setShowAmbientDD(false); setShowThemeDD(false) }}>
                     🎭 {persona === 'sahabat' ? 'Sahabat' : persona === 'psikolog' ? 'Psikolog' : 'Filsuf Zen'} <span className="opacity-40 text-xs">▼</span>
                   </button>
-                  <div className="absolute right-0 top-full pt-2 w-44 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200" style={{ zIndex: 100 }}>
+                  {showPersonaDD && (
+                  <div className="absolute right-0 top-full pt-2 w-44" style={{ zIndex: 100 }}>
                     <div className="rounded-2xl shadow-xl flex flex-col overflow-hidden p-2" style={{ background: dark ? 'rgba(15,23,42,0.95)' : 'rgba(255,255,255,0.97)', border: '1px solid var(--border-2)', backdropFilter: 'blur(20px)' }}>
                       {(['sahabat', 'psikolog', 'filsuf'] as const).map(p => (
-                        <button key={p} onClick={() => setPersona(p)} className="text-left px-4 py-3 text-xs font-semibold rounded-xl transition-all flex items-center gap-2"
+                        <button key={p} onClick={() => { setPersona(p); setShowPersonaDD(false) }} className="text-left px-4 py-3 text-xs font-semibold rounded-xl transition-all flex items-center gap-2"
                           style={{ background: persona === p ? 'rgba(59,130,246,0.1)' : 'transparent', color: persona === p ? '#3b82f6' : 'var(--text-muted)' }}>
                           {p === 'sahabat' ? '👋' : p === 'psikolog' ? '🩺' : '🧘'} {p === 'sahabat' ? 'Sahabat' : p === 'psikolog' ? 'Psikolog' : 'Filsuf Zen'}
                           {persona === p && <span className="ml-auto text-xs">✓</span>}
@@ -1590,18 +1608,21 @@ export default function CurhatPage() {
                       ))}
                     </div>
                   </div>
+                  )}
                 </div>
 
                 {/* Ambient dropdown */}
-                <div className="relative group">
+                <div className="relative" ref={ambientDDRef}>
                   <button className="px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 transition-all shadow-sm hover:scale-105"
-                    style={{ background: ambient ? '#3b82f6' : 'var(--surface-2)', border: `1px solid ${ambient ? 'transparent' : 'var(--border-2)'}`, color: ambient ? 'white' : 'var(--text-muted)' }}>
+                    style={{ background: ambient ? '#3b82f6' : 'var(--surface-2)', border: `1px solid ${ambient ? 'transparent' : 'var(--border-2)'}`, color: ambient ? 'white' : 'var(--text-muted)' }}
+                    onClick={() => { setShowAmbientDD(v => !v); setShowPersonaDD(false); setShowThemeDD(false) }}>
                     🎵 {ambient === 'hujan' ? 'Hujan' : ambient === 'api' ? 'Api' : ambient === 'alam' ? 'Alam' : 'Musik'} <span className="opacity-40 text-xs">▼</span>
                   </button>
-                  <div className="absolute right-0 top-full pt-2 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200" style={{ zIndex: 100 }}>
+                  {showAmbientDD && (
+                  <div className="absolute right-0 top-full pt-2 w-48" style={{ zIndex: 100 }}>
                     <div className="rounded-2xl shadow-xl flex flex-col overflow-hidden p-2" style={{ background: dark ? 'rgba(15,23,42,0.95)' : 'rgba(255,255,255,0.97)', border: '1px solid var(--border-2)', backdropFilter: 'blur(20px)' }}>
                       {(['hujan', 'api', 'alam'] as const).map(a => (
-                        <button key={a} onClick={() => handlePlayAmbient(a)} className="text-left px-4 py-3 text-xs font-semibold rounded-xl transition-all flex items-center gap-2"
+                        <button key={a} onClick={() => { handlePlayAmbient(a); setShowAmbientDD(false) }} className="text-left px-4 py-3 text-xs font-semibold rounded-xl transition-all flex items-center gap-2"
                           style={{ background: ambient === a ? 'rgba(59,130,246,0.1)' : 'transparent', color: ambient === a ? '#3b82f6' : 'var(--text-muted)' }}>
                           {a === 'hujan' ? '🌧️ Hujan Sore' : a === 'api' ? '🔥 Api Unggun' : '🍃 Suara Alam'}
                           {ambient === a && <span className="ml-auto text-xs">✓</span>}
@@ -1609,27 +1630,31 @@ export default function CurhatPage() {
                       ))}
                       {ambient && <>
                         <div className="my-1 mx-3 h-px" style={{ background: 'var(--border-2)' }} />
-                        <button onClick={() => handlePlayAmbient(null)} className="text-left px-4 py-3 text-xs font-semibold rounded-xl transition-all" style={{ color: '#ef4444' }}>🔇 Matikan Suara</button>
+                        <button onClick={() => { handlePlayAmbient(null); setShowAmbientDD(false) }} className="text-left px-4 py-3 text-xs font-semibold rounded-xl transition-all" style={{ color: '#ef4444' }}>🔇 Matikan Suara</button>
                       </>}
                     </div>
                   </div>
+                  )}
                 </div>
 
                 {/* Theme picker */}
-                <div className="relative group">
+                <div className="relative" ref={themeDDRef}>
                   <button className="w-9 h-9 rounded-full flex items-center justify-center text-base transition-all hover:scale-105"
-                    style={{ background: 'var(--surface-2)', border: '1px solid var(--border-2)' }}>{currentTheme.icon}</button>
-                  <div className="absolute right-0 top-full pt-2 w-40 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200" style={{ zIndex: 100 }}>
+                    style={{ background: 'var(--surface-2)', border: '1px solid var(--border-2)' }}
+                    onClick={() => { setShowThemeDD(v => !v); setShowPersonaDD(false); setShowAmbientDD(false) }}>{currentTheme.icon}</button>
+                  {showThemeDD && (
+                  <div className="absolute right-0 top-full pt-2 w-40" style={{ zIndex: 100 }}>
                     <div className="rounded-2xl shadow-xl flex flex-col p-2" style={{ background: dark ? 'rgba(15,23,42,0.95)' : 'rgba(255,255,255,0.97)', border: '1px solid var(--border-2)', backdropFilter: 'blur(20px)' }}>
                       <p className="text-xs font-bold uppercase tracking-wider px-2 pb-1" style={{ color: 'var(--text-faint)' }}>Tema Latar</p>
                       {(Object.keys(BG_THEMES) as BgTheme[]).map(key => (
-                        <button key={key} onClick={() => handleBgThemeChange(key)} className="text-left px-3 py-2 text-xs font-semibold rounded-xl flex items-center gap-2 transition-all"
+                        <button key={key} onClick={() => { handleBgThemeChange(key); setShowThemeDD(false) }} className="text-left px-3 py-2 text-xs font-semibold rounded-xl flex items-center gap-2 transition-all"
                           style={{ background: bgTheme === key ? 'rgba(59,130,246,0.1)' : 'transparent', color: bgTheme === key ? '#3b82f6' : 'var(--text-muted)' }}>
                           {BG_THEMES[key].icon} {BG_THEMES[key].label}
                         </button>
                       ))}
                     </div>
                   </div>
+                  )}
                 </div>
 
                 <button onClick={() => setZenMode(true)} className="w-9 h-9 rounded-full flex items-center justify-center text-base transition-all hover:scale-105" style={{ background: 'var(--surface-2)', border: '1px solid var(--border-2)' }} title="Mode Fokus">🧘</button>
