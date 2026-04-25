@@ -776,7 +776,7 @@ export default function KenopiaHome() {
             <span className="kp-serif" style={{ fontSize:21, fontWeight:800, color:txt }}>Kenopia</span>
             <span style={{ fontSize:9, padding:'2px 8px', borderRadius:100, background:'linear-gradient(135deg,#4f46e5,#7c3aed)', color:'white', fontWeight:800 }}>AI</span>
           </div>
-          <p style={{ fontSize:13.5, color:muted, fontWeight:500 }}>Dibuat dengan 💜 untuk kesehatan mentalmu.</p>
+          <p style={{ fontSize:13.5, color:muted, fontWeight:500 }}>Dibuat Oleh  Dewa Sinar Surya, S.Kom Dengan 💜 untuk kesehatan mentalmu.</p>
         </footer>
       </div>
     </>
