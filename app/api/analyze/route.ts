@@ -84,12 +84,7 @@ async function detectEmotionGroq(text: string): Promise<EmotionKey> {
       [
         {
           role: 'user',
-          content: `Classify the dominant emotion in this Indonesian text into exactly ONE word.
-Choose only from: senang, cinta, marah, takut, sedih
-
-Text: "${text}"
-
-Reply with ONLY the single emotion word, nothing else.`,
+          content: `Classify the dominant emotion in this Indonesian text into exactly ONE word. Choose only from: senang, cinta, marah, takut, sedih. Text: "${text}". Reply with ONLY the single emotion word.`,
         },
       ],
       10,
@@ -104,71 +99,68 @@ Reply with ONLY the single emotion word, nothing else.`,
   }
 }
 
-// ── Generate response via Groq (Memory + Personas Enabled) ───────────────────
-async function generateResponse(text: string, emotion: EmotionKey, context: {user: string, ai: string}[], persona: string): Promise<string> {
+// ── Generate response via Groq (SMART & DEEP CONVERSATION) ───────────────────
+async function generateResponse(text: string, emotion: EmotionKey, context: {user: string, ai: string}[], persona: string, userName: string): Promise<string> {
   const meta = EMOTIONS[emotion]
   
-  // Format history previous context into Groq format
+  // Memasukkan riwayat obrolan agar AI ingat konteks
   const pastMessages = context.flatMap((ctx) => [
     { role: 'user', content: ctx.user },
     { role: 'assistant', content: ctx.ai }
   ])
 
-  // Logika Personas AI
-  let systemRole = ''
+  // PROMPT SYSTEM YANG JAUH LEBIH PINTAR
+  let systemRole = `Kamu adalah Kenopia, teman ngobrol cerdas dengan kecerdasan emosional (EQ) tinggi. 
+Pengguna yang sedang chat denganmu bernama: ${userName}.
+Emosi dominan pengguna saat ini: ${meta.label}.
+Persona kamu saat ini: ${persona.toUpperCase()}.
+
+INSTRUKSI KECERDASAN (WAJIB DIPATUHI MUTLAK):
+1. BERIKAN INSIGHT, BUKAN KLISÉ: Jangan hanya bilang "Aku mengerti perasaanmu" atau "Sabar ya". Analisis akar masalah dari ceritanya dan berikan perspektif/sudut pandang baru yang mencerahkan pikirannya.
+2. BAHASA NATURAL & ELASTIS: Gunakan bahasa Indonesia sehari-hari (aku/kamu atau lo/gue jika cocok). Gaya bahasamu harus mengalir, hangat, dan tidak seperti robot. Jangan pakai struktur "Awal - Tengah - Akhir" yang kaku.
+3. ADAPTASI KONTEKS: Jika dia membahas pekerjaan (misal: coding, desain, instansi), tanggapi dengan nyambung dan cerdas. Jika dia hanya sambat/mengeluh singkat, balas dengan suportif dan ringan.
+4. ANTI-AI-ISMS: Dilarang keras menggunakan awalan seperti "Sebagai AI", "Tentu saja", "Saya mengerti", atau "Mari kita bahas". Langsung bereaksi seperti manusia asli membalas pesan.
+5. INTERAKTIF: Jika ceritanya menggantung atau butuh digali agar dia merasa lega, tutup balasanmu dengan SATU pertanyaan pancingan ringan (jangan seperti menginterogasi).`
+
+  // Suntikkan kedalaman persona
   if (persona === 'psikolog') {
-    systemRole = `Kamu adalah Psikolog Klinis profesional yang hangat. Pengguna terdeteksi merasa ${meta.label}. Validasi perasaan mereka secara medis/psikologis, lalu berikan teknik coping (misal: grounding, CBT ringan, atau breathing) yang praktis. Gunakan bahasa baku tapi empatik.`
+    systemRole += `\n\nSebagai Psikolog: Berikan analisis logis terkait pemicu emosinya (trigger) dan tawarkan teknik regulasi emosi praktis, namun sampaikan dengan bahasa yang merangkul bak seorang terapis handal, bukan dosen.`
   } else if (persona === 'filsuf') {
-    systemRole = `Kamu adalah seorang Filsuf Zen yang bijaksana. Pengguna terdeteksi merasa ${meta.label}. Berikan respons yang puitis, menenangkan, menggunakan metafora alam (air, pohon, langit), dan ajarkan konsep stoicism atau penerimaan diri. Bahasa baku dan dalam.`
+    systemRole += `\n\nSebagai Filsuf Zen: Ajak dia melihat masalah ini dari lensa *stoicism* atau ketidakkekalan (impermanence). Gunakan analogi yang indah tapi masuk akal, agar dia merasa lebih damai dan ikhlas melepaskan yang tak bisa dikontrol.`
   } else {
-    // Default: Sahabat
-    systemRole = `Kamu adalah Kenopia, sahabat emosional yang hangat, empatik, dan penuh kepedulian. Kamu berbicara seperti sahabat terpercaya yang mendengarkan dengan sepenuh hati. Pengguna terdeteksi merasa ${meta.label}. Gaya bahasa: hangat, personal, tidak formal tapi sopan, penuh empati. JANGAN terdengar seperti robot atau template.`
+    systemRole += `\n\nSebagai Sahabat: Jadilah *ride-or-die* nya. Validasi kekesalan atau kesedihannya, bela dia jika perlu, dan ciptakan nuansa obrolan nongkrong di warung kopi yang asik dan melegakan.`
   }
 
   try {
     const result = await groqChat(
       [
-        {
-          role: 'system',
-          content: systemRole + ' Jawab dalam Bahasa Indonesia.',
-        },
+        { role: 'system', content: systemRole },
         ...pastMessages,
-        {
-          role: 'user',
-          content: `Pengguna bercerita:
-"${text}"
-
-Balas dengan cara berikut (jangan gunakan bullet point, tulis mengalir seperti percakapan):
-1. Akui dan validasi perasaan mereka dengan tulus (1-2 kalimat spesifik terhadap ceritanya)
-2. Berikan tanggapan, kata-kata penyemangat, atau teknik sesuai persona kamu (2-3 kalimat)
-3. Tutup dengan satu kalimat quote atau wisdom yang relevan
-
-Total: 80-120 kata. Jangan tambahkan label atau header apapun.`,
-        },
+        { role: 'user', content: text },
       ],
-      400,
-      0.8
+      500, // Token dinaikkan sedikit agar AI punya ruang untuk menjelaskan insight
+      0.8  // Temperatur 0.8 sangat pas untuk keseimbangan antara logis dan kreatif
     )
-    return result || 'Aku mendengarmu. 💙'
+    return result || 'Aku dengerin kok. Terus gimana kelanjutannya?'
   } catch (err) {
     console.error('[generateResponse]', err)
-    return 'Aku mendengarmu dan peduli dengan apa yang kamu rasakan. 💙'
+    return 'Duh, koneksiku lagi agak ngadat nih, tapi aku tetap di sini nemenin kamu. 💙'
   }
 }
 
 // ── Main handler ──────────────────────────────────────────────────────────────
 export async function POST(request: NextRequest) {
   try {
-    // Tambahkan persona di interface body
-    let body: { message?: string, context?: {user: string, ai: string}[], persona?: string }
+    let body: { message?: string, context?: {user: string, ai: string}[], persona?: string, userName?: string }
     try {
       body = await request.json()
     } catch {
       return NextResponse.json({ error: 'Format permintaan tidak valid.' }, { status: 400 })
     }
 
-    // Ambil persona dari request, default ke 'sahabat'
-    const { message, context = [], persona = 'sahabat' } = body
+    // Ambil userName dari frontend (yang sebelumnya kelewatan)
+    const { message, context = [], persona = 'sahabat', userName = 'Teman' } = body
+    
     if (!message || typeof message !== 'string' || message.trim().length === 0) {
       return NextResponse.json({ error: 'Pesan tidak boleh kosong.' }, { status: 400 })
     }
@@ -176,8 +168,7 @@ export async function POST(request: NextRequest) {
     const trimmed = message.trim()
     const emotion = (await detectEmotionHF(trimmed)) ?? (await detectEmotionGroq(trimmed))
     
-    // Pass the context AND persona to generateResponse
-    const aiResponse = await generateResponse(trimmed, emotion, context, persona)
+    const aiResponse = await generateResponse(trimmed, emotion, context, persona, userName)
 
     return NextResponse.json({ emotion, aiResponse, timestamp: new Date().toISOString() })
   } catch (err) {
