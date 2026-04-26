@@ -167,7 +167,6 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
           <div className="px-5 sm:px-6 py-3.5 sm:py-4 text-sm leading-relaxed bubble-user font-medium">
             {msg.userMessage}
           </div>
-          {/* BUG FIX: timestamp not absolute, proper spacing */}
           <p className="text-right text-xs mt-1.5 font-medium msg-time pr-1" style={{ color: 'var(--text-faint)' }}>{timeStr}</p>
         </div>
       </div>
@@ -184,7 +183,6 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
             <div className="px-5 sm:px-6 py-3.5 sm:py-4 text-sm leading-relaxed whitespace-pre-wrap bubble-ai pr-10 sm:pr-12">
               {msg.aiResponse}
             </div>
-            {/* Speak button — inside bubble, not overflowing */}
             <button onClick={handleSpeak}
               className="absolute right-2 bottom-2 w-7 h-7 rounded-full flex items-center justify-center text-xs shadow-md transition-all hover:scale-110 active:scale-95"
               style={{
@@ -196,7 +194,6 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
               {isPlaying ? '⏹' : '🔊'}
             </button>
           </div>
-          {/* BUG FIX: timestamp inline, not absolute overflowing */}
           <p className="text-xs mt-1.5 ml-1 font-medium msg-time" style={{ color: 'var(--text-faint)' }}>{timeStr}</p>
         </div>
       </div>
@@ -863,7 +860,7 @@ export default function CurhatPage() {
   const [showCapsule, setShowCapsule] = useState(false)
   const [showZenCanvas, setShowZenCanvas] = useState(false)
   const [showBalloon, setShowBalloon] = useState(false)
-  const [showFutureSelf, setShowFutureSelf] = useState(false) // ← NEW
+  const [showFutureSelf, setShowFutureSelf] = useState(false)
   const [capsules, setCapsules] = useState<TimeCapsule[]>([])
   const [showSOS, setShowSOS] = useState(false)
   const [showPinSetup, setShowPinSetup] = useState(false)
@@ -978,8 +975,6 @@ export default function CurhatPage() {
       navigator.serviceWorker.getRegistrations().then(regs => { regs.forEach(r => r.unregister()) })
     }
   }, [])
-
-
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [activeMessages, loading, pendingText])
   useEffect(() => () => { recognitionRef.current?.abort() }, [])
@@ -1123,7 +1118,7 @@ export default function CurhatPage() {
   // ── Onboarding Name Modal ──────────────────────────────────────────────────
   if (showNameModal && !isLocked) {
     return (
-      <div className="flex h-screen items-center justify-center flex-col relative overflow-hidden" style={{ background: '#030308', ...cssVars as React.CSSProperties }}>
+      <div className="flex h-[100dvh] w-full items-center justify-center flex-col relative overflow-hidden" style={{ background: '#030308', ...cssVars as React.CSSProperties }}>
         <div className="absolute inset-0 opacity-40 pointer-events-none" style={{ background: 'radial-gradient(circle at 50% 40%,rgba(59,130,246,0.2) 0%,transparent 60%)' }} />
         <div className="z-10 p-8 sm:p-10 rounded-4xl flex flex-col items-center w-[90%] max-w-[420px] relative anim-fade-in"
           style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 40px 100px rgba(0,0,0,0.6)' }}>
@@ -1147,7 +1142,7 @@ export default function CurhatPage() {
   // ── Lock Screen ────────────────────────────────────────────────────────────
   if (isLocked) {
     return (
-      <div className="flex h-screen items-center justify-center flex-col relative overflow-hidden" style={{ background: '#030308', ...cssVars as React.CSSProperties }}>
+      <div className="flex h-[100dvh] w-full items-center justify-center flex-col relative overflow-hidden" style={{ background: '#030308', ...cssVars as React.CSSProperties }}>
         <div className="absolute inset-0 opacity-40 pointer-events-none" style={{ background: 'radial-gradient(circle at 50% 40%,rgba(59,130,246,0.25) 0%,transparent 60%)' }} />
         <div className="z-10 p-8 sm:p-10 rounded-4xl flex flex-col items-center w-[90%] max-w-[400px] anim-fade-in"
           style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 40px 100px rgba(0,0,0,0.6)' }}>
@@ -1199,6 +1194,14 @@ export default function CurhatPage() {
         /* ── Global Font ── */
         .kp-app, .kp-app * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
         .font-serif { font-family: 'Lora', Georgia, serif !important; }
+
+        /* ── Prevent Mobile Body Scroll (Fix Navbar/Input Jump) ── */
+        html, body {
+          height: 100%;
+          overflow: hidden;
+          overscroll-behavior-y: none;
+          touch-action: pan-x pan-y;
+        }
 
         /* ── Base ── */
         ::-webkit-scrollbar { width: 4px; }
@@ -1269,7 +1272,7 @@ export default function CurhatPage() {
         .z-85  { z-index: 85; }
         .z-100 { z-index: 100; }
 
-        /* ── BUG FIX: Desktop sidebar always visible via CSS (overrides JS transform) ── */
+        /* ── Desktop sidebar always visible via CSS ── */
         @media (min-width: 1024px) {
           .kp-sidebar { transform: translateX(0) !important; position: relative !important; }
         }
@@ -1333,7 +1336,8 @@ export default function CurhatPage() {
         }
       `}</style>
 
-      <div className="kp-app flex h-screen overflow-hidden relative transition-colors duration-1000" style={{ background: mainBgColor } as React.CSSProperties}>
+      {/* ✅ PERUBAHAN UTAMA: h-screen diganti menjadi h-[100dvh] dengan ukuran mutlak */}
+      <div className="kp-app flex h-[100dvh] w-full overflow-hidden relative transition-colors duration-1000" style={{ background: mainBgColor } as React.CSSProperties}>
 
         {/* ── Mesh Background Orbs ── */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden opacity-80" style={{ zIndex: 0 }}>
@@ -1359,7 +1363,6 @@ export default function CurhatPage() {
         {showBubbleWrap && <BubbleWrapOverlay onClose={() => setShowBubbleWrap(false)} />}
         {showGrounding && <GroundingOverlay onClose={() => setShowGrounding(false)} />}
         {showCapsule && <TimeCapsuleOverlay capsules={capsules} setCapsules={setCapsules} onClose={() => setShowCapsule(false)} />}
-        {/* ✅ FIX: Future Self Letter connected to /api/futureself */}
         {showFutureSelf && <FutureSelfOverlay history={allMessages} userName={userName} onClose={() => setShowFutureSelf(false)} />}
         {showMoodCheckin && <MoodCheckinModal onSelect={handleMoodSelect} onSkip={handleMoodSkip} />}
         {showConfetti && <ConfettiRain />}
@@ -1561,7 +1564,6 @@ export default function CurhatPage() {
                   <div className="mt-4 flex flex-col gap-2">
                     <button onClick={() => { setShowInsight(true); fetchInsight() }} className="w-full py-2.5 text-xs font-bold rounded-xl flex justify-center items-center gap-2 transition-all hover:scale-[1.02]"
                       style={{ background: 'rgba(59,130,246,0.1)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.2)' }}>🧠 AI Insight</button>
-                    {/* ✅ Future Self button in stats section */}
                     <button onClick={() => setShowFutureSelf(true)} className="w-full py-2.5 text-xs font-bold rounded-xl flex justify-center items-center gap-2 transition-all hover:scale-[1.02]"
                       style={{ background: 'rgba(134,239,172,0.1)', color: '#16a34a', border: '1px solid rgba(134,239,172,0.2)' }}>✉️ Surat Masa Depan</button>
                     {allMessages.length > 0 && <button onClick={handleExport} className="w-full py-2.5 text-xs font-bold rounded-xl flex justify-center items-center gap-2 transition-all hover:scale-[1.02] text-white"
