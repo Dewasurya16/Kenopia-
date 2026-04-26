@@ -4,6 +4,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
+import { Analytics } from "@vercel/analytics/next"
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 interface Feature { icon: string; title: string; desc: string; color: string; colSpan: string }
@@ -484,6 +485,8 @@ export default function KenopiaHome() {
         <p className={`text-[11px] md:text-sm font-medium mb-1.5 ${dark ? 'text-zinc-500' : 'text-slate-400'}`}>© {new Date().getFullYear()} Kenopia AI. Dirancang untuk ketenangan mentalmu.</p>
         <p className={`text-[9px] md:text-[11px] font-medium ${dark ? 'text-zinc-600' : 'text-slate-400'}`}>Dibuat oleh Dewa Sinar Surya, S,Kom. 💜 Pranata Komputer Kejaksaan Republik Indonesia.</p>
       </footer>
+      {/* ─── VERCEL ANALYTICS ─── */}
+      <Analytics />
     </div>
   )
 }
