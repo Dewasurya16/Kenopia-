@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic'
 import { ChatMessage, EMOTIONS, EmotionKey, AnalyzeResponse } from '@/lib/types'
 import { v4 as uuidv4 } from 'uuid'
 import html2canvas from 'html2canvas'
+import { motion, AnimatePresence } from 'framer-motion'
 
 const EmotionChart = dynamic(() => import('@/components/EmotionChart'), { ssr: false })
 
@@ -90,7 +91,10 @@ interface SpeechRecognitionErrorEvent extends Event { error: string }
 function EmotionBadge({ emotion }: { emotion: EmotionKey }) {
   const meta = EMOTIONS[emotion]
   return (
-    <div className="mx-auto my-2 px-5 py-2 rounded-full text-xs font-bold flex items-center gap-2 anim-slide-up"
+    <motion.div 
+      initial={{ opacity: 0, y: 10, scale: 0.9 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      className="mx-auto my-2 px-5 py-2 rounded-full text-xs font-bold flex items-center gap-2"
       style={{
         background: `${meta.color}12`,
         color: meta.color,
@@ -100,29 +104,31 @@ function EmotionBadge({ emotion }: { emotion: EmotionKey }) {
       }}>
       <span className="text-sm">{meta.emoji}</span>
       <span className="tracking-wider uppercase text-[10px]">{meta.label} terdeteksi</span>
-    </div>
+    </motion.div>
   )
 }
 
 function TypingIndicator() {
   return (
-    <div className="flex items-end gap-3 anim-slide-up mb-5">
+    <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="flex items-end gap-3 mb-5">
       <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-sm flex-shrink-0 font-black text-white shadow-lg"
         style={{ background: 'linear-gradient(135deg,#3b82f6,#ec4899)' }}>K</div>
       <div className="px-5 py-3.5 flex items-center gap-1.5 shadow-sm"
         style={{ background: 'var(--surface-2)', borderRadius: '20px 20px 20px 6px', border: '1px solid var(--border-2)', minHeight: '48px' }}>
-        {[0, 160, 320].map(d => (
-          <div key={d} className="w-2.5 h-2.5 rounded-full"
-            style={{ background: 'linear-gradient(135deg,#3b82f6,#6366f1)', animation: `kBounce 1.1s ${d}ms ease-in-out infinite` }} />
+        {[0, 1, 2].map(i => (
+          <motion.div key={i} className="w-2.5 h-2.5 rounded-full"
+            style={{ background: 'linear-gradient(135deg,#3b82f6,#6366f1)' }}
+            animate={{ y: [0, -6, 0], opacity: [1, 0.5, 1] }}
+            transition={{ duration: 1.1, repeat: Infinity, ease: "easeInOut", delay: i * 0.16 }} />
         ))}
       </div>
-    </div>
+    </motion.div>
   )
 }
 
 function PendingUserBubble({ text }: { text: string }) {
   return (
-    <div className="flex flex-col gap-2 anim-slide-up mb-6">
+    <motion.div initial={{ opacity: 0, y: 15, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} className="flex flex-col gap-2 mb-6">
       <div className="flex justify-end">
         <div className="max-w-[85%] sm:max-w-[75%]">
           <div className="px-6 py-4 text-sm leading-relaxed opacity-70 shadow-sm"
@@ -130,11 +136,11 @@ function PendingUserBubble({ text }: { text: string }) {
             {text}
           </div>
           <p className="text-right text-xs mt-2 font-medium flex items-center justify-end gap-1" style={{ color: 'var(--text-faint)' }}>
-            <span style={{ animation: 'kPulse 1.5s ease-in-out infinite' }}>⏳</span> Mengirim...
+            <motion.span animate={{ opacity: [1, 0.4, 1] }} transition={{ duration: 1.5, repeat: Infinity }}>⏳</motion.span> Mengirim...
           </p>
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }
 
@@ -160,7 +166,7 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
   }
 
   return (
-    <div className="flex flex-col gap-2 anim-slide-up mb-6 msg-group">
+    <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} layout className="flex flex-col gap-2 mb-6 msg-group">
       {/* User bubble */}
       <div className="flex justify-end">
         <div className="max-w-[85%] sm:max-w-[75%]">
@@ -183,21 +189,23 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
             <div className="px-5 sm:px-6 py-3.5 sm:py-4 text-sm leading-relaxed whitespace-pre-wrap bubble-ai pr-10 sm:pr-12">
               {msg.aiResponse}
             </div>
-            <button onClick={handleSpeak}
-              className="absolute right-2 bottom-2 w-7 h-7 rounded-full flex items-center justify-center text-xs shadow-md transition-all hover:scale-110 active:scale-95"
+            <motion.button onClick={handleSpeak}
+              whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+              animate={isPlaying ? { boxShadow: ['0 0 0px #3b82f6', '0 0 15px #3b82f6', '0 0 0px #3b82f6'] } : {}}
+              transition={isPlaying ? { duration: 1.5, repeat: Infinity } : {}}
+              className="absolute right-2 bottom-2 w-7 h-7 rounded-full flex items-center justify-center text-xs shadow-md transition-colors"
               style={{
                 background: isPlaying ? '#3b82f6' : 'var(--surface)',
                 color: isPlaying ? 'white' : 'var(--text-faint)',
-                border: '1px solid var(--border-2)',
-                animation: isPlaying ? 'kPulse 1.5s ease-in-out infinite' : 'none',
+                border: '1px solid var(--border-2)'
               }} title="Dengarkan Suara">
               {isPlaying ? '⏹' : '🔊'}
-            </button>
+            </motion.button>
           </div>
           <p className="text-xs mt-1.5 ml-1 font-medium msg-time" style={{ color: 'var(--text-faint)' }}>{timeStr}</p>
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }
 
@@ -206,7 +214,7 @@ function HistoryItem({ session, active, onClick, onDelete }: { session: ChatSess
   const meta = lastMsg ? EMOTIONS[lastMsg.emotion] : EMOTIONS['sedih']
   const label = new Date(session.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
   return (
-    <div className="relative hist-group">
+    <motion.div layout initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="relative hist-group">
       <button onClick={onClick}
         className="w-full text-left px-4 py-3.5 rounded-2xl transition-all duration-300"
         style={{
@@ -227,7 +235,7 @@ function HistoryItem({ session, active, onClick, onDelete }: { session: ChatSess
           className="absolute top-1/2 -translate-y-1/2 right-2.5 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all hist-delete hover:scale-110 active:scale-90"
           style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}>✕</button>
       )}
-    </div>
+    </motion.div>
   )
 }
 
@@ -253,7 +261,7 @@ function EmotionCalendar({ messages }: { messages: ChatMessage[] }) {
         {groupedData.length === 0
           ? <p className="text-xs italic" style={{ color: 'var(--text-faint)' }}>Belum ada data perjalanan.</p>
           : groupedData.map((day, i) => (
-            <div key={i} className="w-7 h-7 rounded-xl cursor-help cal-dot"
+            <motion.div key={i} whileHover={{ scale: 1.3, rotate: 6 }} className="w-7 h-7 rounded-xl cursor-help"
               style={{ background: EMOTIONS[day.dominant].color, opacity: 0.85 }}
               title={`${day.date}: ${EMOTIONS[day.dominant].label}`} />
           ))}
@@ -305,18 +313,18 @@ function FadingCanvasOverlay({ onClose }: { onClose: () => void }) {
   const stopDraw = () => { setIsDrawing(false); isDrawingRef.current = false; lastPos.current = null }
 
   return (
-    <div className="fixed inset-0 z-100 flex flex-col anim-fade-in" style={{ background: '#0a0a0f', touchAction: 'none' }}>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }} className="fixed inset-0 z-100 flex flex-col" style={{ background: '#0a0a0f', touchAction: 'none' }}>
       <div className="absolute top-10 left-0 right-0 flex flex-col items-center pointer-events-none z-10 px-4">
         <h2 className="text-3xl font-bold mb-2 tracking-widest uppercase" style={{ color: 'rgba(255,255,255,0.9)' }}>Kanvas Fana</h2>
         <p className="text-sm text-center max-w-md" style={{ color: 'rgba(255,255,255,0.45)' }}>Coretkan amarah atau resahmu. Perhatikan bagaimana ia perlahan memudar tanpa sisa.</p>
       </div>
       <canvas ref={canvasRef} onPointerDown={startDraw} onPointerMove={draw} onPointerUp={stopDraw} onPointerCancel={stopDraw} onPointerLeave={stopDraw}
         className="absolute inset-0 w-full h-full cursor-crosshair" style={{ touchAction: 'none' }} />
-      <button onClick={onClose} className="absolute bottom-10 left-1/2 -translate-x-1/2 px-10 py-4 rounded-full font-bold transition-all hover:scale-105 active:scale-95 shadow-xl z-10"
+      <motion.button onClick={onClose} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="absolute bottom-10 left-1/2 -translate-x-1/2 px-10 py-4 rounded-full font-bold shadow-xl z-10"
         style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: 'white', backdropFilter: 'blur(12px)' }}>
         Keluar ✨
-      </button>
-    </div>
+      </motion.button>
+    </motion.div>
   )
 }
 
@@ -330,38 +338,40 @@ function HopeBalloonOverlay({ onClose }: { onClose: () => void }) {
     setTimeout(() => onClose(), 6500)
   }
   return (
-    <div className="fixed inset-0 z-100 flex flex-col items-center justify-center p-6 overflow-hidden anim-fade-in" style={{ background: 'rgba(12,74,110,0.97)', backdropFilter: 'blur(20px)' }}>
-      {phase === 'idle' && (
-        <div className="w-full max-w-md flex flex-col items-center anim-slide-up relative z-10">
-          <div className="text-7xl mb-6" style={{ animation: 'kBounce2 2s ease-in-out infinite' }}>🎈</div>
-          <h2 className="text-3xl font-bold text-white mb-3 text-center">Balon Pelepasan</h2>
-          <p className="text-center text-sm mb-8 leading-relaxed px-4" style={{ color: 'rgba(186,230,253,0.8)' }}>Tuliskan satu pikiran yang mengganggu. Ikatkan di balon ini, dan biarkan angin membawanya pergi.</p>
-          <textarea value={text} onChange={e => setText(e.target.value)} placeholder="Pikiran ini berat, tapi aku siap melepaskannya..."
-            className="w-full p-5 rounded-3xl mb-6 text-sm outline-none resize-none"
-            style={{ background: 'rgba(255,255,255,0.1)', border: '2px solid rgba(255,255,255,0.2)', color: 'white' }} rows={4} />
-          <div className="flex gap-3 w-full">
-            <button onClick={onClose} className="flex-1 py-4 rounded-2xl font-bold" style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.1)' }}>Batal</button>
-            <button onClick={handleRelease} disabled={!text.trim()} className="flex-1 py-4 rounded-2xl font-bold disabled:opacity-50 transition-all hover:scale-105"
-              style={{ background: '#38bdf8', color: '#0c4a6e' }}>Lepaskan 🌬️</button>
-          </div>
-        </div>
-      )}
-      {phase === 'flying' && (
-        <div className="flex flex-col items-center absolute bottom-10" style={{ animation: 'kBalloonFly 4s ease-in forwards' }}>
-          <div className="p-4 rounded-2xl shadow-xl max-w-[220px] text-center mb-3 relative" style={{ background: 'rgba(255,255,255,0.9)' }}>
-            <p className="text-sm font-medium leading-relaxed italic" style={{ color: '#0c4a6e' }}>"{text}"</p>
-          </div>
-          <div className="text-8xl">🎈</div>
-        </div>
-      )}
-      {phase === 'done' && (
-        <div className="anim-fade-in text-center z-10 px-6">
-          <div className="text-6xl mb-6">☁️</div>
-          <h2 className="text-3xl font-bold text-white mb-4">Telah Berlalu</h2>
-          <p className="text-sm leading-relaxed" style={{ color: 'rgba(186,230,253,0.9)' }}>Semua pikiran itu telah terbang jauh dan memudar.<br />Kamu aman di sini sekarang.</p>
-        </div>
-      )}
-    </div>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-100 flex flex-col items-center justify-center p-6 overflow-hidden" style={{ background: 'rgba(12,74,110,0.97)', backdropFilter: 'blur(20px)' }}>
+      <AnimatePresence mode="wait">
+        {phase === 'idle' && (
+          <motion.div key="idle" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }} className="w-full max-w-md flex flex-col items-center relative z-10">
+            <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="text-7xl mb-6">🎈</motion.div>
+            <h2 className="text-3xl font-bold text-white mb-3 text-center">Balon Pelepasan</h2>
+            <p className="text-center text-sm mb-8 leading-relaxed px-4" style={{ color: 'rgba(186,230,253,0.8)' }}>Tuliskan satu pikiran yang mengganggu. Ikatkan di balon ini, dan biarkan angin membawanya pergi.</p>
+            <textarea value={text} onChange={e => setText(e.target.value)} placeholder="Pikiran ini berat, tapi aku siap melepaskannya..."
+              className="w-full p-5 rounded-3xl mb-6 text-sm outline-none resize-none"
+              style={{ background: 'rgba(255,255,255,0.1)', border: '2px solid rgba(255,255,255,0.2)', color: 'white' }} rows={4} />
+            <div className="flex gap-3 w-full">
+              <button onClick={onClose} className="flex-1 py-4 rounded-2xl font-bold" style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.1)' }}>Batal</button>
+              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={handleRelease} disabled={!text.trim()} className="flex-1 py-4 rounded-2xl font-bold disabled:opacity-50"
+                style={{ background: '#38bdf8', color: '#0c4a6e' }}>Lepaskan 🌬️</motion.button>
+            </div>
+          </motion.div>
+        )}
+        {phase === 'flying' && (
+          <motion.div key="flying" initial={{ opacity: 1, y: 0 }} animate={{ opacity: 0, y: -1000, scale: 0.5, rotate: 15 }} transition={{ duration: 4, ease: "easeIn" }} className="flex flex-col items-center absolute bottom-10">
+            <div className="p-4 rounded-2xl shadow-xl max-w-[220px] text-center mb-3 relative" style={{ background: 'rgba(255,255,255,0.9)' }}>
+              <p className="text-sm font-medium leading-relaxed italic" style={{ color: '#0c4a6e' }}>"{text}"</p>
+            </div>
+            <div className="text-8xl">🎈</div>
+          </motion.div>
+        )}
+        {phase === 'done' && (
+          <motion.div key="done" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="text-center z-10 px-6">
+            <div className="text-6xl mb-6">☁️</div>
+            <h2 className="text-3xl font-bold text-white mb-4">Telah Berlalu</h2>
+            <p className="text-sm leading-relaxed" style={{ color: 'rgba(186,230,253,0.9)' }}>Semua pikiran itu telah terbang jauh dan memudar.<br />Kamu aman di sini sekarang.</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   )
 }
 
@@ -388,80 +398,81 @@ function TimeCapsuleOverlay({ capsules, setCapsules, onClose }: { capsules: Time
   }
 
   return (
-    <div className="fixed inset-0 z-100 flex flex-col items-center justify-center p-4 anim-fade-in" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)' }}>
-      <div className="p-6 md:p-8 rounded-4xl max-w-lg w-full flex flex-col max-h-[85vh] anim-slide-up relative" style={{ background: 'var(--surface)', border: '1px solid var(--border-2)', boxShadow: '0 40px 100px rgba(0,0,0,0.3)' }}>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-100 flex flex-col items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)' }}>
+      <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="p-6 md:p-8 rounded-4xl max-w-lg w-full flex flex-col max-h-[85vh] relative" style={{ background: 'var(--surface)', border: '1px solid var(--border-2)', boxShadow: '0 40px 100px rgba(0,0,0,0.3)' }}>
         <button onClick={onClose} className="absolute top-6 right-6 w-9 h-9 rounded-full flex items-center justify-center transition-all hover:scale-110"
           style={{ color: 'var(--text-faint)', background: 'var(--surface-2)' }}>✕</button>
 
-        {view === 'list' && <>
-          <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--text)' }}>⏳ Kapsul Waktu</h2>
-          <p className="text-sm mb-6" style={{ color: 'var(--text-faint)' }}>Pesan untuk dirimu di masa depan.</p>
-          <button onClick={() => setView('write')} className="w-full py-4 mb-6 rounded-2xl font-bold text-white transition-all hover:scale-[1.02]"
-            style={{ background: '#6366f1', boxShadow: '0 8px 24px rgba(99,102,241,0.35)' }}>✍️ Tulis Kapsul Baru</button>
-          <div className="flex-1 overflow-y-auto space-y-3 pr-2">
-            {capsules.length === 0
-              ? <p className="text-center text-sm mt-8 italic" style={{ color: 'var(--text-faint)' }}>Belum ada kapsul waktu.</p>
-              : capsules.map(c => {
-                const locked = new Date() < new Date(c.unlockDate)
-                return (
-                  <div key={c.id} onClick={() => openCapsule(c)} className="p-4 rounded-2xl relative transition-all cursor-pointer" style={{ background: locked ? 'var(--surface-2)' : 'rgba(99,102,241,0.08)', border: `1px solid ${locked ? 'var(--border-2)' : 'rgba(99,102,241,0.3)'}`, opacity: locked ? 0.8 : 1 }}>
-                    <button onClick={e => handleDelete(c.id, e)} className="absolute top-4 right-4 text-sm transition-all hover:scale-110" style={{ color: 'var(--text-faint)' }}>🗑️</button>
-                    <div className="flex items-center gap-3">
-                      <span className="text-3xl">{locked ? '🔒' : '🔓'}</span>
-                      <div>
-                        <p className="font-bold text-sm" style={{ color: locked ? 'var(--text-muted)' : '#6366f1' }}>{locked ? 'Masih Terkunci' : 'Sudah Bisa Dibuka!'}</p>
-                        <p className="text-xs mt-1" style={{ color: 'var(--text-faint)' }}>Buka: {new Date(c.unlockDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+        <AnimatePresence mode="wait">
+          {view === 'list' && <motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col flex-1 min-h-0">
+            <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--text)' }}>⏳ Kapsul Waktu</h2>
+            <p className="text-sm mb-6" style={{ color: 'var(--text-faint)' }}>Pesan untuk dirimu di masa depan.</p>
+            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setView('write')} className="w-full py-4 mb-6 rounded-2xl font-bold text-white"
+              style={{ background: '#6366f1', boxShadow: '0 8px 24px rgba(99,102,241,0.35)' }}>✍️ Tulis Kapsul Baru</motion.button>
+            <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+              {capsules.length === 0
+                ? <p className="text-center text-sm mt-8 italic" style={{ color: 'var(--text-faint)' }}>Belum ada kapsul waktu.</p>
+                : capsules.map(c => {
+                  const locked = new Date() < new Date(c.unlockDate)
+                  return (
+                    <div key={c.id} onClick={() => openCapsule(c)} className="p-4 rounded-2xl relative transition-all cursor-pointer" style={{ background: locked ? 'var(--surface-2)' : 'rgba(99,102,241,0.08)', border: `1px solid ${locked ? 'var(--border-2)' : 'rgba(99,102,241,0.3)'}`, opacity: locked ? 0.8 : 1 }}>
+                      <button onClick={e => handleDelete(c.id, e)} className="absolute top-4 right-4 text-sm transition-all hover:scale-110" style={{ color: 'var(--text-faint)' }}>🗑️</button>
+                      <div className="flex items-center gap-3">
+                        <span className="text-3xl">{locked ? '🔒' : '🔓'}</span>
+                        <div>
+                          <p className="font-bold text-sm" style={{ color: locked ? 'var(--text-muted)' : '#6366f1' }}>{locked ? 'Masih Terkunci' : 'Sudah Bisa Dibuka!'}</p>
+                          <p className="text-xs mt-1" style={{ color: 'var(--text-faint)' }}>Buka: {new Date(c.unlockDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )
-              })}
-          </div>
-        </>}
-
-        {view === 'write' && <>
-          <h2 className="text-2xl font-bold mb-2" style={{ color: '#6366f1' }}>Tulis Pesan ke Masa Depan</h2>
-          <p className="text-sm mb-6" style={{ color: 'var(--text-faint)' }}>Pesan ini akan dikunci darimu.</p>
-          <textarea value={text} onChange={e => setText(e.target.value)} placeholder="Hai diriku di masa depan, saat menulis ini aku sedang merasa..."
-            className="w-full flex-1 min-h-[200px] p-5 rounded-2xl mb-4 text-sm leading-relaxed outline-none resize-none"
-            style={{ background: 'var(--surface-2)', border: '1px solid var(--border-2)', color: 'var(--text)' }} />
-          <div className="mb-6">
-            <label className="block text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--text-faint)' }}>Kunci Selama:</label>
-            <div className="flex gap-2">
-              {[{ l: '1 Mgg', v: 7 }, { l: '1 Bln', v: 30 }, { l: '6 Bln', v: 180 }, { l: '1 Thn', v: 365 }].map(opt => (
-                <button key={opt.v} onClick={() => setDuration(opt.v)} className="flex-1 py-3 rounded-xl text-xs font-bold transition-all"
-                  style={{ background: duration === opt.v ? '#6366f1' : 'var(--surface-2)', color: duration === opt.v ? 'white' : 'var(--text-muted)' }}>{opt.l}</button>
-              ))}
+                  )
+                })}
             </div>
-          </div>
-          <div className="flex gap-3 mt-auto">
-            <button onClick={() => setView('list')} className="flex-1 py-4 rounded-2xl font-bold" style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}>Batal</button>
-            <button onClick={handleSave} disabled={!text.trim()} className="flex-1 py-4 rounded-2xl font-bold text-white disabled:opacity-50" style={{ background: '#6366f1' }}>🔒 Tanam Kapsul</button>
-          </div>
-        </>}
+          </motion.div>}
 
-        {view === 'read' && activeCapsule && (
-          <div className="flex flex-col h-full">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-full flex items-center justify-center text-2xl" style={{ background: 'rgba(99,102,241,0.1)' }}>💌</div>
-              <div>
-                <p className="text-xs font-bold uppercase tracking-widest" style={{ color: '#6366f1' }}>Pesan dari masa lalu</p>
-                <p className="text-xs" style={{ color: 'var(--text-faint)' }}>Ditulis: {new Date(activeCapsule.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+          {view === 'write' && <motion.div key="write" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="flex flex-col flex-1 min-h-0">
+            <h2 className="text-2xl font-bold mb-2" style={{ color: '#6366f1' }}>Tulis Pesan ke Masa Depan</h2>
+            <p className="text-sm mb-6" style={{ color: 'var(--text-faint)' }}>Pesan ini akan dikunci darimu.</p>
+            <textarea value={text} onChange={e => setText(e.target.value)} placeholder="Hai diriku di masa depan, saat menulis ini aku sedang merasa..."
+              className="w-full flex-1 min-h-[200px] p-5 rounded-2xl mb-4 text-sm leading-relaxed outline-none resize-none"
+              style={{ background: 'var(--surface-2)', border: '1px solid var(--border-2)', color: 'var(--text)' }} />
+            <div className="mb-6">
+              <label className="block text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--text-faint)' }}>Kunci Selama:</label>
+              <div className="flex gap-2">
+                {[{ l: '1 Mgg', v: 7 }, { l: '1 Bln', v: 30 }, { l: '6 Bln', v: 180 }, { l: '1 Thn', v: 365 }].map(opt => (
+                  <button key={opt.v} onClick={() => setDuration(opt.v)} className="flex-1 py-3 rounded-xl text-xs font-bold transition-all"
+                    style={{ background: duration === opt.v ? '#6366f1' : 'var(--surface-2)', color: duration === opt.v ? 'white' : 'var(--text-muted)' }}>{opt.l}</button>
+                ))}
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto p-5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap italic"
-              style={{ background: 'rgba(99,102,241,0.05)', border: '1px solid rgba(99,102,241,0.15)', color: 'var(--text)' }}>
-              "{activeCapsule.text}"
+            <div className="flex gap-3 mt-auto">
+              <button onClick={() => setView('list')} className="flex-1 py-4 rounded-2xl font-bold" style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}>Batal</button>
+              <button onClick={handleSave} disabled={!text.trim()} className="flex-1 py-4 rounded-2xl font-bold text-white disabled:opacity-50" style={{ background: '#6366f1' }}>🔒 Tanam Kapsul</button>
             </div>
-            <button onClick={() => setView('list')} className="w-full mt-6 py-4 rounded-2xl font-bold" style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}>Tutup Surat</button>
-          </div>
-        )}
-      </div>
-    </div>
+          </motion.div>}
+
+          {view === 'read' && activeCapsule && (
+            <motion.div key="read" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col h-full">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center text-2xl" style={{ background: 'rgba(99,102,241,0.1)' }}>💌</div>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest" style={{ color: '#6366f1' }}>Pesan dari masa lalu</p>
+                  <p className="text-xs" style={{ color: 'var(--text-faint)' }}>Ditulis: {new Date(activeCapsule.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto p-5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap italic"
+                style={{ background: 'rgba(99,102,241,0.05)', border: '1px solid rgba(99,102,241,0.15)', color: 'var(--text)' }}>
+                "{activeCapsule.text}"
+              </div>
+              <button onClick={() => setView('list')} className="w-full mt-6 py-4 rounded-2xl font-bold" style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}>Tutup Surat</button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    </motion.div>
   )
 }
 
-// ── Future Self Letter Modal (NEW - connected to /api/futureself) ──────────────
 function FutureSelfOverlay({ history, userName, onClose }: { history: ChatMessage[]; userName: string; onClose: () => void }) {
   const [letter, setLetter] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -484,8 +495,8 @@ function FutureSelfOverlay({ history, userName, onClose }: { history: ChatMessag
   }
 
   return (
-    <div className="fixed inset-0 z-100 flex flex-col items-center justify-center p-4 anim-fade-in" style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(12px)' }}>
-      <div className="p-6 md:p-8 rounded-4xl max-w-lg w-full flex flex-col max-h-[88vh] anim-slide-up relative" style={{ background: 'var(--surface)', border: '1px solid var(--border-2)', boxShadow: '0 40px 100px rgba(0,0,0,0.3)' }}>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-100 flex flex-col items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(12px)' }}>
+      <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="p-6 md:p-8 rounded-4xl max-w-lg w-full flex flex-col max-h-[88vh] relative" style={{ background: 'var(--surface)', border: '1px solid var(--border-2)', boxShadow: '0 40px 100px rgba(0,0,0,0.3)' }}>
         <button onClick={onClose} className="absolute top-6 right-6 w-9 h-9 rounded-full flex items-center justify-center transition-all hover:scale-110"
           style={{ color: 'var(--text-faint)', background: 'var(--surface-2)' }}>✕</button>
 
@@ -502,8 +513,9 @@ function FutureSelfOverlay({ history, userName, onClose }: { history: ChatMessag
           {loading && (
             <div className="flex flex-col items-center justify-center py-16 gap-4">
               <div className="flex gap-2">
-                {[0, 150, 300].map(d => (
-                  <div key={d} className="w-3 h-3 rounded-full" style={{ background: '#86efac', animation: `kBounce 1s ${d}ms ease-in-out infinite` }} />
+                {[0, 1, 2].map(i => (
+                  <motion.div key={i} className="w-3 h-3 rounded-full" style={{ background: '#86efac' }}
+                    animate={{ y: [0, -8, 0] }} transition={{ duration: 1, repeat: Infinity, delay: i * 0.15 }} />
                 ))}
               </div>
               <p className="text-sm font-medium" style={{ color: 'var(--text-faint)' }}>Merangkai kata dari masa depanmu...</p>
@@ -516,19 +528,19 @@ function FutureSelfOverlay({ history, userName, onClose }: { history: ChatMessag
             </div>
           )}
           {letter && (
-            <div className="text-sm leading-relaxed whitespace-pre-wrap p-5 rounded-2xl"
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-sm leading-relaxed whitespace-pre-wrap p-5 rounded-2xl"
               style={{ background: 'rgba(134,239,172,0.06)', border: '1px solid rgba(134,239,172,0.2)', color: 'var(--text)', fontStyle: 'italic', lineHeight: 1.9 }}>
               {letter}
-            </div>
+            </motion.div>
           )}
         </div>
 
         {letter && (
           <div className="mt-5 pt-5 flex gap-3" style={{ borderTop: '1px solid var(--border-2)' }}>
-            <button onClick={fetchLetter} className="flex-1 py-3.5 rounded-2xl text-sm font-bold transition-all hover:scale-[1.02]"
-              style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}>🔄 Tulis Ulang</button>
-            <button onClick={onClose} className="flex-1 py-3.5 rounded-2xl text-sm font-bold text-white transition-all hover:scale-[1.02]"
-              style={{ background: 'linear-gradient(135deg,#4f46e5,#7c3aed)' }}>💚 Terima Kasih</button>
+            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={fetchLetter} className="flex-1 py-3.5 rounded-2xl text-sm font-bold"
+              style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}>🔄 Tulis Ulang</motion.button>
+            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={onClose} className="flex-1 py-3.5 rounded-2xl text-sm font-bold text-white"
+              style={{ background: 'linear-gradient(135deg,#4f46e5,#7c3aed)' }}>💚 Terima Kasih</motion.button>
           </div>
         )}
 
@@ -539,8 +551,8 @@ function FutureSelfOverlay({ history, userName, onClose }: { history: ChatMessag
             <p className="text-xs" style={{ color: 'var(--text-faint)' }}>Kamu baru punya {history.length} pesan. Yuk cerita lebih banyak dulu!</p>
           </div>
         )}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   )
 }
 
@@ -555,34 +567,36 @@ function GroundingOverlay({ onClose }: { onClose: () => void }) {
   ]
   const current = steps[step]
   return (
-    <div className="fixed inset-0 z-100 flex flex-col items-center justify-center p-6 anim-fade-in" style={{ background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(20px)' }}>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-100 flex flex-col items-center justify-center p-6" style={{ background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(20px)' }}>
       <div className="max-w-md w-full relative">
         <button onClick={onClose} className="absolute -top-12 right-0 font-bold transition-all hover:opacity-100 text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>✕ Tutup</button>
-        {step < steps.length ? (
-          <div className="p-8 md:p-10 rounded-4xl border flex flex-col items-center text-center anim-slide-up relative overflow-hidden"
-            style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', backdropFilter: 'blur(16px)' }}>
-            <div className="absolute top-0 left-0 h-1.5 w-full" style={{ background: 'rgba(255,255,255,0.1)' }}>
-              <div className="h-full transition-all duration-500" style={{ width: `${(step / steps.length) * 100}%`, background: current.color }} />
-            </div>
-            <div className="w-24 h-24 rounded-full flex items-center justify-center text-5xl mb-6 shadow-lg border-2"
-              style={{ borderColor: `${current.color}50`, background: `${current.color}20` }}>{current.icon}</div>
-            <h2 className="text-5xl font-bold mb-2 tabular-nums" style={{ color: current.color }}>{current.num}</h2>
-            <h3 className="text-white text-2xl font-bold mb-4">{current.title}</h3>
-            <p className="text-sm leading-relaxed mb-10" style={{ color: 'rgba(255,255,255,0.75)' }}>{current.desc}</p>
-            <button onClick={() => setStep(s => s + 1)} className="w-full py-4 rounded-2xl text-white font-bold transition-all hover:scale-105 active:scale-95 text-base"
-              style={{ background: current.color }}>Sudah, Lanjut ✓</button>
-          </div>
-        ) : (
-          <div className="p-8 md:p-10 rounded-4xl border flex flex-col items-center text-center anim-slide-up"
-            style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', backdropFilter: 'blur(16px)' }}>
-            <div className="w-24 h-24 rounded-full flex items-center justify-center text-5xl mb-6" style={{ background: 'rgba(34,197,94,0.2)', border: '2px solid rgba(34,197,94,0.4)' }}>🌿</div>
-            <h2 className="text-white text-3xl font-bold mb-4">Kembali ke Realita</h2>
-            <p className="text-sm leading-relaxed mb-10" style={{ color: 'rgba(255,255,255,0.75)' }}>Kamu sudah kembali terhubung dengan masa kini. Tarik napas dalam, kamu aman di sini.</p>
-            <button onClick={onClose} className="w-full py-4 rounded-2xl font-bold text-base transition-all hover:scale-105" style={{ background: 'white', color: '#0f172a' }}>Selesai ✨</button>
-          </div>
-        )}
+        <AnimatePresence mode="wait">
+          {step < steps.length ? (
+            <motion.div key={step} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-8 md:p-10 rounded-4xl border flex flex-col items-center text-center relative overflow-hidden"
+              style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', backdropFilter: 'blur(16px)' }}>
+              <div className="absolute top-0 left-0 h-1.5 w-full" style={{ background: 'rgba(255,255,255,0.1)' }}>
+                <div className="h-full transition-all duration-500" style={{ width: `${(step / steps.length) * 100}%`, background: current.color }} />
+              </div>
+              <div className="w-24 h-24 rounded-full flex items-center justify-center text-5xl mb-6 shadow-lg border-2"
+                style={{ borderColor: `${current.color}50`, background: `${current.color}20` }}>{current.icon}</div>
+              <h2 className="text-5xl font-bold mb-2 tabular-nums" style={{ color: current.color }}>{current.num}</h2>
+              <h3 className="text-white text-2xl font-bold mb-4">{current.title}</h3>
+              <p className="text-sm leading-relaxed mb-10" style={{ color: 'rgba(255,255,255,0.75)' }}>{current.desc}</p>
+              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setStep(s => s + 1)} className="w-full py-4 rounded-2xl text-white font-bold text-base"
+                style={{ background: current.color }}>Sudah, Lanjut ✓</motion.button>
+            </motion.div>
+          ) : (
+            <motion.div key="done" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="p-8 md:p-10 rounded-4xl border flex flex-col items-center text-center"
+              style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', backdropFilter: 'blur(16px)' }}>
+              <div className="w-24 h-24 rounded-full flex items-center justify-center text-5xl mb-6" style={{ background: 'rgba(34,197,94,0.2)', border: '2px solid rgba(34,197,94,0.4)' }}>🌿</div>
+              <h2 className="text-white text-3xl font-bold mb-4">Kembali ke Realita</h2>
+              <p className="text-sm leading-relaxed mb-10" style={{ color: 'rgba(255,255,255,0.75)' }}>Kamu sudah kembali terhubung dengan masa kini. Tarik napas dalam, kamu aman di sini.</p>
+              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={onClose} className="w-full py-4 rounded-2xl font-bold text-base" style={{ background: 'white', color: '#0f172a' }}>Selesai ✨</motion.button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
-    </div>
+    </motion.div>
   )
 }
 
@@ -590,8 +604,8 @@ function BubbleWrapOverlay({ onClose }: { onClose: () => void }) {
   const [bubbles, setBubbles] = useState<boolean[]>(Array(42).fill(false))
   const isAllPopped = bubbles.every(b => b)
   return (
-    <div className="fixed inset-0 z-100 flex flex-col items-center justify-center p-4 anim-fade-in" style={{ background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(20px)' }}>
-      <div className="p-8 rounded-4xl border flex flex-col items-center max-w-sm w-full" style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', backdropFilter: 'blur(16px)' }}>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-100 flex flex-col items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(20px)' }}>
+      <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="p-8 rounded-4xl border flex flex-col items-center max-w-sm w-full" style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', backdropFilter: 'blur(16px)' }}>
         <h2 className="text-white text-2xl font-bold mb-2">Pecahkan Gelembung</h2>
         <p className="text-xs mb-8 text-center leading-relaxed" style={{ color: 'rgba(255,255,255,0.55)' }}>Fokuskan pikiranmu pada setiap letusan kecil ini untuk meredakan kecemasan.</p>
         <div className="grid grid-cols-6 gap-3 mb-8">
@@ -609,11 +623,11 @@ function BubbleWrapOverlay({ onClose }: { onClose: () => void }) {
           ))}
         </div>
         <div className="flex gap-3 w-full">
-          {isAllPopped && <button onClick={() => setBubbles(Array(42).fill(false))} className="flex-1 py-3.5 rounded-2xl font-bold text-white transition-all hover:scale-105" style={{ background: '#3b82f6' }}>🔄 Ulangi</button>}
-          <button onClick={onClose} className="flex-1 py-3.5 rounded-2xl font-bold transition-all hover:scale-105" style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.1)' }}>Selesai ✓</button>
+          {isAllPopped && <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setBubbles(Array(42).fill(false))} className="flex-1 py-3.5 rounded-2xl font-bold text-white" style={{ background: '#3b82f6' }}>🔄 Ulangi</motion.button>}
+          <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={onClose} className="flex-1 py-3.5 rounded-2xl font-bold" style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.1)' }}>Selesai ✓</motion.button>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   )
 }
 
@@ -632,28 +646,31 @@ function BreathingOverlay({ onClose }: { onClose: () => void }) {
     }, 1000)
     return () => clearInterval(ticker)
   }, [])
+  
   const isInhale = phase === 'Tarik Napas...'; const isHold = phase === 'Tahan...'
+  const scale = isInhale ? 1.3 : isHold ? 1.3 : 0.8;
+  const shadow = isInhale || isHold ? '0 0 120px rgba(14,165,233,0.6)' : '0 0 40px rgba(14,165,233,0.2)'
+
   return (
-    <div className="fixed inset-0 z-100 flex flex-col items-center justify-center anim-fade-in" style={{ background: 'rgba(3,3,8,0.93)', backdropFilter: 'blur(20px)' }}>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-100 flex flex-col items-center justify-center" style={{ background: 'rgba(3,3,8,0.93)', backdropFilter: 'blur(20px)' }}>
       <h2 className="text-white text-3xl md:text-4xl font-bold mb-4 text-center px-4">Tenangkan Pikiran Sejenak</h2>
       <p className="text-sm mb-16 tracking-wider font-medium" style={{ color: 'rgba(255,255,255,0.45)' }}>Teknik 4-2-4 · Ikuti irama lingkaran</p>
-      <div className="relative w-64 h-64 md:w-80 md:h-80 rounded-full flex items-center justify-center"
-        style={{
-          background: isHold ? 'radial-gradient(circle,#818cf8,#6366f1)' : 'radial-gradient(circle,#7dd3fc,#0ea5e9)',
-          transition: 'transform 4s ease-in-out, box-shadow 4s ease-in-out, background 0.5s ease',
-          transform: isInhale ? 'scale(1.3)' : isHold ? 'scale(1.3)' : 'scale(0.8)',
-          boxShadow: isInhale || isHold ? '0 0 120px rgba(14,165,233,0.6)' : '0 0 40px rgba(14,165,233,0.2)',
-        }}>
+      
+      <motion.div className="relative w-64 h-64 md:w-80 md:h-80 rounded-full flex items-center justify-center"
+        animate={{ scale, boxShadow: shadow }}
+        transition={{ duration: phase === 'Tahan...' ? 0.5 : 4, ease: "easeInOut" }}
+        style={{ background: isHold ? 'radial-gradient(circle,#818cf8,#6366f1)' : 'radial-gradient(circle,#7dd3fc,#0ea5e9)' }}>
         <div className="text-center">
           <span className="text-white font-bold text-2xl md:text-3xl drop-shadow-lg tracking-widest block">{phase}</span>
           <span className="text-white text-5xl font-bold mt-2 block tabular-nums">{count}</span>
         </div>
-      </div>
-      <button onClick={onClose} className="mt-20 px-10 py-4 rounded-full font-bold transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg"
+      </motion.div>
+
+      <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={onClose} className="mt-20 px-10 py-4 rounded-full font-bold shadow-lg"
         style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: 'white', backdropFilter: 'blur(12px)' }}>
         Sudah Merasa Lebih Baik ✓
-      </button>
-    </div>
+      </motion.button>
+    </motion.div>
   )
 }
 
@@ -665,59 +682,66 @@ function BurnBebanOverlay({ onClose }: { onClose: () => void }) {
     setPhase('igniting'); setTimeout(() => setPhase('dissolving'), 1500); setTimeout(() => setPhase('done'), 2500); setTimeout(() => onClose(), 5000)
   }
   return (
-    <div className="fixed inset-0 z-100 flex flex-col items-center justify-center p-6 transition-all duration-1000 anim-fade-in"
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-100 flex flex-col items-center justify-center p-6 transition-colors duration-1000"
       style={{ background: phase !== 'idle' ? 'rgba(69,10,10,0.97)' : 'rgba(0,0,0,0.82)', backdropFilter: 'blur(20px)' }}>
-      {phase !== 'done' ? (
-        <div className="w-full max-w-xl flex flex-col items-center">
-          <div className="text-6xl md:text-7xl mb-6 transition-all duration-500" style={{ transform: phase === 'igniting' ? 'scale(2)' : 'scale(1)', filter: phase === 'igniting' ? 'drop-shadow(0 0 30px rgba(239,68,68,1))' : 'none' }}>
-            {phase === 'igniting' ? '🔥' : '🌬️'}
-          </div>
-          <h2 className="text-3xl md:text-4xl font-bold mb-3 text-center transition-all" style={{ color: phase !== 'idle' ? '#fca5a5' : 'white' }}>
-            {phase === 'igniting' ? 'Membakar Emosimu...' : 'Ruang Lepas Beban'}
-          </h2>
-          <p className="text-sm text-center mb-10 leading-relaxed transition-all" style={{ color: 'rgba(209,213,219,0.85)', opacity: phase !== 'idle' ? 0 : 1 }}>
-            Ketikkan semua amarah atau kesedihan terdalammu di sini.<br />Teks akan <strong>dibakar</strong> dan tidak akan pernah disimpan.
-          </p>
-          <textarea className="w-full p-5 sm:p-8 rounded-3xl border-2 outline-none text-sm sm:text-base leading-relaxed resize-none shadow-2xl mb-8 transition-all duration-300"
-            style={{
-              background: phase === 'idle' ? 'rgba(255,255,255,0.08)' : 'rgba(153,27,27,0.5)',
-              border: phase === 'idle' ? '2px solid rgba(255,255,255,0.15)' : '2px solid rgba(252,165,165,1)',
-              color: phase !== 'idle' ? '#fef08a' : 'white',
-              textShadow: phase !== 'idle' ? '0 0 15px #ef4444' : 'none',
-              animation: phase === 'igniting' ? 'kBurnShake 0.3s infinite' : phase === 'dissolving' ? 'kAshFly 1.2s forwards' : 'none',
-            }} rows={7}
-            placeholder="Keluarkan semua amarahmu di sini. Tidak ada yang akan tahu..."
-            value={text} onChange={e => setText(e.target.value)} disabled={phase !== 'idle'} />
-          <div className="flex gap-4 w-full" style={{ opacity: phase !== 'idle' ? 0 : 1, pointerEvents: phase !== 'idle' ? 'none' : 'auto', transition: 'opacity 0.3s' }}>
-            <button onClick={onClose} className="flex-1 py-4 rounded-2xl font-bold transition-all hover:scale-[1.02]"
-              style={{ background: 'rgba(255,255,255,0.1)', color: 'rgba(209,213,219,0.9)', border: '1px solid rgba(255,255,255,0.1)' }}>Batal</button>
-            <button onClick={handleBurn} disabled={!text} className="flex-1 py-4 rounded-2xl font-bold text-white transition-all disabled:opacity-50 hover:scale-[1.02]"
-              style={{ background: 'linear-gradient(135deg,#ef4444,#f97316)', boxShadow: '0 10px 40px rgba(239,68,68,0.4)', border: '1px solid rgba(252,165,165,0.5)' }}>
-              🔥 Bakar &amp; Hancurkan!
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center anim-slide-up text-center">
-          <div className="w-32 h-32 rounded-full flex items-center justify-center mb-8" style={{ background: 'rgba(34,197,94,0.15)', border: '2px solid rgba(34,197,94,0.4)', boxShadow: '0 0 80px rgba(34,197,94,0.3)' }}>
-            <span className="text-7xl">🍃</span>
-          </div>
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">Sudah Berlalu</h2>
-          <p className="text-gray-300 text-center max-w-md leading-relaxed text-lg px-4">Semua beban dan amarahmu telah lenyap tertiup angin. Tarik napas yang dalam...</p>
-        </div>
-      )}
-    </div>
+      <AnimatePresence mode="wait">
+        {phase !== 'done' ? (
+          <motion.div key="form" exit={{ opacity: 0 }} className="w-full max-w-xl flex flex-col items-center">
+            <motion.div animate={phase === 'igniting' ? { scale: 2, filter: 'drop-shadow(0 0 30px rgba(239,68,68,1))' } : { scale: 1 }} transition={{ duration: 0.5 }} className="text-6xl md:text-7xl mb-6">
+              {phase === 'igniting' ? '🔥' : '🌬️'}
+            </motion.div>
+            <h2 className="text-3xl md:text-4xl font-bold mb-3 text-center transition-colors" style={{ color: phase !== 'idle' ? '#fca5a5' : 'white' }}>
+              {phase === 'igniting' ? 'Membakar Emosimu...' : 'Ruang Lepas Beban'}
+            </h2>
+            <p className="text-sm text-center mb-10 leading-relaxed transition-opacity" style={{ color: 'rgba(209,213,219,0.85)', opacity: phase !== 'idle' ? 0 : 1 }}>
+              Ketikkan semua amarah atau kesedihan terdalammu di sini.<br />Teks akan <strong>dibakar</strong> dan tidak akan pernah disimpan.
+            </p>
+            <motion.textarea className="w-full p-5 sm:p-8 rounded-3xl border-2 outline-none text-sm sm:text-base leading-relaxed resize-none shadow-2xl mb-8"
+              animate={phase === 'igniting' ? { x: [-3, 3, -3, 3, 0] } : phase === 'dissolving' ? { y: -150, scale: 1.1, filter: 'blur(15px)', opacity: 0 } : {}}
+              transition={phase === 'igniting' ? { duration: 0.3, repeat: Infinity } : phase === 'dissolving' ? { duration: 1.2 } : {}}
+              style={{
+                background: phase === 'idle' ? 'rgba(255,255,255,0.08)' : 'rgba(153,27,27,0.5)',
+                border: phase === 'idle' ? '2px solid rgba(255,255,255,0.15)' : '2px solid rgba(252,165,165,1)',
+                color: phase !== 'idle' ? '#fef08a' : 'white',
+                textShadow: phase !== 'idle' ? '0 0 15px #ef4444' : 'none',
+              }} rows={7}
+              placeholder="Keluarkan semua amarahmu di sini. Tidak ada yang akan tahu..."
+              value={text} onChange={e => setText(e.target.value)} disabled={phase !== 'idle'} />
+            
+            <div className="flex gap-4 w-full transition-opacity" style={{ opacity: phase !== 'idle' ? 0 : 1, pointerEvents: phase !== 'idle' ? 'none' : 'auto' }}>
+              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={onClose} className="flex-1 py-4 rounded-2xl font-bold"
+                style={{ background: 'rgba(255,255,255,0.1)', color: 'rgba(209,213,219,0.9)', border: '1px solid rgba(255,255,255,0.1)' }}>Batal</motion.button>
+              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleBurn} disabled={!text} className="flex-1 py-4 rounded-2xl font-bold text-white disabled:opacity-50"
+                style={{ background: 'linear-gradient(135deg,#ef4444,#f97316)', boxShadow: '0 10px 40px rgba(239,68,68,0.4)', border: '1px solid rgba(252,165,165,0.5)' }}>
+                🔥 Bakar &amp; Hancurkan!
+              </motion.button>
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div key="done" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center justify-center text-center">
+            <div className="w-32 h-32 rounded-full flex items-center justify-center mb-8" style={{ background: 'rgba(34,197,94,0.15)', border: '2px solid rgba(34,197,94,0.4)', boxShadow: '0 0 80px rgba(34,197,94,0.3)' }}>
+              <span className="text-7xl">🍃</span>
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">Sudah Berlalu</h2>
+            <p className="text-gray-300 text-center max-w-md leading-relaxed text-lg px-4">Semua beban dan amarahmu telah lenyap tertiup angin. Tarik napas yang dalam...</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   )
 }
 
 function MicButton({ isListening, onClick, disabled }: { isListening: boolean; onClick: () => void; disabled: boolean }) {
   return (
-    <button onClick={onClick} disabled={disabled}
-      className="relative flex-shrink-0 flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50"
-      style={{ width: 44, height: 44, borderRadius: '50%', background: isListening ? '#ef4444' : 'var(--surface-2)', color: isListening ? 'white' : 'var(--text-faint)', boxShadow: isListening ? '0 6px 20px rgba(239,68,68,0.4)' : 'none', animation: isListening ? 'kPulse 1.5s ease-in-out infinite' : 'none' }}
+    <motion.button onClick={onClick} disabled={disabled}
+      whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+      animate={isListening ? { boxShadow: ['0 0 0px #ef4444', '0 6px 20px rgba(239,68,68,0.6)', '0 0 0px #ef4444'] } : {}}
+      transition={isListening ? { duration: 1.5, repeat: Infinity } : {}}
+      className="relative flex-shrink-0 flex items-center justify-center disabled:opacity-50"
+      style={{ width: 44, height: 44, borderRadius: '50%', background: isListening ? '#ef4444' : 'var(--surface-2)', color: isListening ? 'white' : 'var(--text-faint)' }}
       aria-label={isListening ? 'Hentikan rekaman' : 'Bicara'}>
       <span className="text-lg">{isListening ? '⏹' : '🎤'}</span>
-    </button>
+    </motion.button>
   )
 }
 
@@ -728,26 +752,26 @@ function MoodCheckinModal({ onSelect, onSkip }: { onSelect: (v: number) => void;
     { v: 1, e: '😢', l: 'Berat', c: '#ef4444' },
   ]
   return (
-    <div className="fixed inset-0 z-85 flex items-end sm:items-center justify-center p-4 anim-fade-in" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(12px)' }}>
-      <div className="w-full max-w-sm anim-slide-up p-8 rounded-4xl" style={{ background: 'var(--surface)', border: '1px solid var(--border-2)', boxShadow: '0 40px 100px rgba(0,0,0,0.3)' }}>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-85 flex items-end sm:items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(12px)' }}>
+      <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="w-full max-w-sm p-8 rounded-4xl" style={{ background: 'var(--surface)', border: '1px solid var(--border-2)', boxShadow: '0 40px 100px rgba(0,0,0,0.3)' }}>
         <div className="text-center mb-7">
-          <div className="text-5xl mb-4 inline-block" style={{ animation: 'kBounce2 2s ease-in-out infinite' }}>☀️</div>
+          <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="text-5xl mb-4 inline-block">☀️</motion.div>
           <h2 className="text-xl font-bold mb-1.5" style={{ color: 'var(--text)' }}>Selamat Datang Kembali!</h2>
           <p className="text-sm font-medium" style={{ color: 'var(--text-faint)' }}>Bagaimana perasaanmu hari ini?</p>
         </div>
         <div className="flex gap-2 mb-7">
           {moods.map(m => (
-            <button key={m.v} onClick={() => onSelect(m.v)} className="flex-1 flex flex-col items-center gap-1.5 py-4 rounded-2xl transition-all duration-200 hover:scale-110 active:scale-95 border-2"
+            <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} key={m.v} onClick={() => onSelect(m.v)} className="flex-1 flex flex-col items-center gap-1.5 py-4 rounded-2xl border-2"
               style={{ background: `${m.c}15`, borderColor: `${m.c}40`, color: m.c }}>
               <span className="text-2xl">{m.e}</span>
               <span className="text-xs font-bold uppercase tracking-wider">{m.l}</span>
-            </button>
+            </motion.button>
           ))}
         </div>
         <button onClick={onSkip} className="w-full py-3 text-sm font-semibold rounded-2xl transition-all hover:opacity-80"
           style={{ color: 'var(--text-faint)', background: 'var(--surface-2)' }}>Lewati untuk sekarang</button>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   )
 }
 
@@ -760,11 +784,14 @@ function ConfettiRain() {
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 340 }}>
       {pieces.map(p => (
-        <div key={p.id} className="absolute" style={{
-          left: `${p.left}%`, top: '-16px', width: p.size, height: p.size * (p.isCircle ? 1 : 0.5),
-          background: p.color, borderRadius: p.isCircle ? '50%' : '2px',
-          animation: `kConfetti ${p.duration}s ${p.delay}s ease-in forwards`,
-        }} />
+        <motion.div key={p.id} className="absolute" 
+          initial={{ y: -20, rotate: 0, opacity: 1 }}
+          animate={{ y: '100vh', rotate: 720, opacity: 0 }}
+          transition={{ duration: p.duration, delay: p.delay, ease: "easeIn" }}
+          style={{
+            left: `${p.left}%`, top: '-16px', width: p.size, height: p.size * (p.isCircle ? 1 : 0.5),
+            background: p.color, borderRadius: p.isCircle ? '50%' : '2px'
+          }} />
       ))}
     </div>
   )
@@ -773,8 +800,8 @@ function ConfettiRain() {
 function RenameModal({ initialName, onSave, onClose }: { initialName: string; onSave: (name: string) => void; onClose: () => void }) {
   const [name, setName] = useState(initialName)
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 anim-fade-in" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)' }}>
-      <div className="p-8 rounded-4xl max-w-sm w-full shadow-2xl relative anim-slide-up" style={{ background: 'var(--surface)', border: '1px solid var(--border-2)' }}>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)' }}>
+      <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="p-8 rounded-4xl max-w-sm w-full shadow-2xl relative" style={{ background: 'var(--surface)', border: '1px solid var(--border-2)' }}>
         <button onClick={onClose} className="absolute top-6 right-6 w-9 h-9 rounded-full flex items-center justify-center hover:scale-110 transition-all"
           style={{ color: 'var(--text-faint)', background: 'var(--surface-2)' }}>✕</button>
         <div className="text-4xl mb-4 text-center">✏️</div>
@@ -784,13 +811,13 @@ function RenameModal({ initialName, onSave, onClose }: { initialName: string; on
           style={{ background: 'var(--surface-2)', border: '2px solid var(--border-2)', color: 'var(--text)' }}
           value={name} onChange={e => setName(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && name.trim() && onSave(name.trim())} />
-        <button onClick={() => name.trim() && onSave(name.trim())} disabled={!name.trim()}
-          className="w-full py-4 rounded-2xl font-bold text-base text-white disabled:opacity-50 transition-all hover:scale-105"
+        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => name.trim() && onSave(name.trim())} disabled={!name.trim()}
+          className="w-full py-4 rounded-2xl font-bold text-base text-white disabled:opacity-50"
           style={{ background: '#3b82f6', boxShadow: '0 8px 24px rgba(59,130,246,0.35)' }}>
           Simpan Nama ✨
-        </button>
-      </div>
-    </div>
+        </motion.button>
+      </motion.div>
+    </motion.div>
   )
 }
 
@@ -813,18 +840,16 @@ function QuickReplies({ emotion, onSelect }: { emotion: EmotionKey; onSelect: (t
   const replies = QUICK_REPLIES[emotion] || []
   const meta = EMOTIONS[emotion]
   return (
-    <div className="flex flex-wrap justify-center gap-2 my-4 anim-fade-in px-2">
+    <div className="flex flex-wrap justify-center gap-2 my-4 px-2">
       {replies.map((reply, i) => (
-        <button key={reply} onClick={() => onSelect(reply)}
-          className="quick-chip px-4 py-2 rounded-full text-xs font-semibold shadow-sm"
-          style={{
-            background: `${meta.color}10`,
-            color: meta.color,
-            border: `1.5px solid ${meta.color}30`,
-            animationDelay: `${i * 60}ms`,
-          }}>
+        <motion.button key={reply} 
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
+          whileHover={{ scale: 1.06, y: -1 }} whileTap={{ scale: 0.96 }}
+          onClick={() => onSelect(reply)}
+          className="px-4 py-2 rounded-full text-xs font-semibold shadow-sm"
+          style={{ background: `${meta.color}10`, color: meta.color, border: `1.5px solid ${meta.color}30`, backdropFilter: 'blur(12px)' }}>
           {reply}
-        </button>
+        </motion.button>
       ))}
     </div>
   )
@@ -1120,21 +1145,21 @@ export default function CurhatPage() {
     return (
       <div className="flex h-[100dvh] w-full items-center justify-center flex-col relative overflow-hidden" style={{ background: '#030308', ...cssVars as React.CSSProperties }}>
         <div className="absolute inset-0 opacity-40 pointer-events-none" style={{ background: 'radial-gradient(circle at 50% 40%,rgba(59,130,246,0.2) 0%,transparent 60%)' }} />
-        <div className="z-10 p-8 sm:p-10 rounded-4xl flex flex-col items-center w-[90%] max-w-[420px] relative anim-fade-in"
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="z-10 p-8 sm:p-10 rounded-4xl flex flex-col items-center w-[90%] max-w-[420px] relative"
           style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 40px 100px rgba(0,0,0,0.6)' }}>
-          <div className="text-6xl mb-6" style={{ animation: 'kBounce2 2s ease-in-out infinite' }}>👋</div>
+          <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="text-6xl mb-6">👋</motion.div>
           <h2 className="text-2xl sm:text-3xl font-bold mb-3 text-center text-white">Kenalan Dulu Yuk!</h2>
           <p className="text-sm text-center mb-8 leading-relaxed" style={{ color: 'rgba(209,213,219,0.85)' }}>Agar Kenopia bisa mengenal dan memanggilmu dengan lebih akrab.</p>
           <input type="text" maxLength={20} placeholder="Nama Panggilanmu..." autoFocus
             className="w-full text-center text-xl font-bold p-4 rounded-2xl mb-6 outline-none transition-all text-white placeholder-gray-500"
             style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
             value={tempName} onChange={e => setTempName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSaveName()} />
-          <button onClick={handleSaveName} disabled={!tempName.trim()}
-            className="w-full py-4 rounded-2xl font-bold text-base text-white disabled:opacity-50 transition-all hover:scale-105"
+          <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={handleSaveName} disabled={!tempName.trim()}
+            className="w-full py-4 rounded-2xl font-bold text-base text-white disabled:opacity-50"
             style={{ background: '#3b82f6', boxShadow: '0 10px 30px rgba(59,130,246,0.3)' }}>
             Mulai Curhat ✨
-          </button>
-        </div>
+          </motion.button>
+        </motion.div>
       </div>
     )
   }
@@ -1144,23 +1169,23 @@ export default function CurhatPage() {
     return (
       <div className="flex h-[100dvh] w-full items-center justify-center flex-col relative overflow-hidden" style={{ background: '#030308', ...cssVars as React.CSSProperties }}>
         <div className="absolute inset-0 opacity-40 pointer-events-none" style={{ background: 'radial-gradient(circle at 50% 40%,rgba(59,130,246,0.25) 0%,transparent 60%)' }} />
-        <div className="z-10 p-8 sm:p-10 rounded-4xl flex flex-col items-center w-[90%] max-w-[400px] anim-fade-in"
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="z-10 p-8 sm:p-10 rounded-4xl flex flex-col items-center w-[90%] max-w-[400px]"
           style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 40px 100px rgba(0,0,0,0.6)' }}>
           <div className="w-20 h-20 rounded-full flex items-center justify-center text-5xl mb-6" style={{ background: 'linear-gradient(135deg,rgba(59,130,246,0.2),rgba(236,72,153,0.2))', border: '1px solid rgba(255,255,255,0.1)' }}>🔒</div>
           <h2 className="text-2xl font-bold mb-8 text-white">Area Pribadi</h2>
           <div className="flex gap-4 mb-4">
             {[0, 1, 2, 3].map(i => (
               <div key={i} className="w-5 h-5 rounded-full transition-all duration-300"
-                style={{ background: pinError ? '#f87171' : pinInput.length > i ? '#60a5fa' : 'rgba(255,255,255,0.15)', transform: pinInput.length > i ? 'scale(1.25)' : 'scale(1)', boxShadow: pinInput.length > i ? '0 0 20px rgba(96,165,250,0.8)' : 'none', animation: pinError ? 'kPulse 0.3s ease-in-out' : 'none' }} />
+                style={{ background: pinError ? '#f87171' : pinInput.length > i ? '#60a5fa' : 'rgba(255,255,255,0.15)', transform: pinInput.length > i ? 'scale(1.25)' : 'scale(1)', boxShadow: pinInput.length > i ? '0 0 20px rgba(96,165,250,0.8)' : 'none' }} />
             ))}
           </div>
           <div className="text-xs font-bold mb-6 h-5 transition-all" style={{ color: '#f87171', opacity: pinError ? 1 : 0 }}>{pinError || '—'}</div>
           <div className="grid grid-cols-3 gap-3 w-full">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, '', 0, '⌫'].map((n, idx) => (
-              <button key={idx}
+              <motion.button key={idx} whileHover={n !== '' ? { scale: 1.05 } : {}} whileTap={n !== '' ? { scale: 0.95 } : {}}
                 onClick={() => n === '⌫' ? setPinInput(p => p.slice(0, -1)) : n !== '' && handlePinDigit(String(n))}
                 disabled={n === '' || (typeof n === 'number' && pinInput.length >= 4)}
-                className="h-14 sm:h-16 rounded-2xl text-xl font-bold transition-all hover:scale-105 active:scale-95"
+                className="h-14 sm:h-16 rounded-2xl text-xl font-bold"
                 style={{
                   visibility: n === '' ? 'hidden' : 'visible',
                   background: n === '⌫' ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.05)',
@@ -1168,10 +1193,10 @@ export default function CurhatPage() {
                   border: `1px solid ${n === '⌫' ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.05)'}`,
                 }}>
                 {n}
-              </button>
+              </motion.button>
             ))}
           </div>
-        </div>
+        </motion.div>
       </div>
     )
   }
@@ -1209,55 +1234,21 @@ export default function CurhatPage() {
         ::-webkit-scrollbar-thumb { background: rgba(156,163,175,0.25); border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(156,163,175,0.45); }
 
-        /* ── Keyframes ── */
-        @keyframes kBounce  { 0%,100%{transform:translateY(0);opacity:1;} 50%{transform:translateY(-6px);opacity:.5;} }
-        @keyframes kBounce2 { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-8px);} }
-        @keyframes kPulse   { 0%,100%{opacity:1;} 50%{opacity:.4;} }
-        @keyframes kFadeIn  { from{opacity:0;} to{opacity:1;} }
-        @keyframes kSlideUp { from{opacity:0;transform:translateY(20px);} to{opacity:1;transform:translateY(0);} }
-        @keyframes kPopIn   { 0%{opacity:0;transform:scale(0.8) translateY(12px);} 70%{transform:scale(1.04) translateY(-2px);} 100%{opacity:1;transform:scale(1) translateY(0);} }
-        @keyframes kOrbSlow { 0%,100%{transform:translate(0,0) scale(1) rotate(0deg);} 33%{transform:translate(4vw,-4vh) scale(1.1) rotate(10deg);} 66%{transform:translate(-3vw,3vh) scale(0.9) rotate(-5deg);} }
-        @keyframes kBalloonFly { 0%{transform:translateY(0) scale(1) rotate(0deg);opacity:1;} 100%{transform:translateY(-120vh) scale(0.6) rotate(15deg);opacity:0;} }
-        @keyframes kBurnShake { 0%,100%{transform:translate(1px,1px)} 25%{transform:translate(-3px,-2px)} 50%{transform:translate(3px,2px)} 75%{transform:translate(-2px,3px)} }
-        @keyframes kAshFly { 0%{opacity:1;transform:translateY(0) scale(1);filter:blur(0);} 100%{opacity:0;transform:translateY(-150px) scale(1.1);filter:blur(15px);} }
-        @keyframes kConfetti { 0%{transform:translateY(-20px) rotate(0deg);opacity:1;} 100%{transform:translateY(100vh) rotate(720deg);opacity:0;} }
-        @keyframes kSheetUp { from{opacity:0;transform:translateY(100%);} to{opacity:1;transform:translateY(0);} }
-        @keyframes kMenuIn  { from{opacity:0;transform:translateY(-8px) scale(0.97);} to{opacity:1;transform:translateY(0) scale(1);} }
-        @keyframes kGlow    { 0%,100%{box-shadow:0 0 20px rgba(59,130,246,0.3);} 50%{box-shadow:0 0 40px rgba(59,130,246,0.6);} }
-        @keyframes kShimmer { 0%{background-position:-200% 0;} 100%{background-position:200% 0;} }
-
-        /* ── Utility animation classes ── */
-        .anim-fade-in  { animation: kFadeIn  0.35s ease both; }
-        .anim-slide-up { animation: kSlideUp 0.45s cubic-bezier(0.22,1,0.36,1) both; }
-        .anim-pop-in   { animation: kPopIn   0.5s cubic-bezier(0.34,1.56,0.64,1) both; }
-        .anim-orb-slow { animation: kOrbSlow 18s ease-in-out infinite; }
-        .sheet-enter   { animation: kSheetUp 0.3s cubic-bezier(0.32,0.72,0,1) forwards; }
-        .menu-enter    { animation: kMenuIn  0.18s ease-out forwards; }
+        /* ── Optimize Background Blur for Mobile ── */
+        .bg-orb { will-change: transform; transform: translateZ(0); }
 
         /* ── Message timestamps ── */
         .msg-group .msg-time { opacity: 0; transition: opacity 0.25s; }
         .msg-group:hover .msg-time { opacity: 1; }
-        /* BUG FIX: Show timestamps on touch/mobile devices (no hover support) */
-        @media (hover: none) {
-          .msg-group .msg-time { opacity: 0.55; }
-        }
+        @media (hover: none) { .msg-group .msg-time { opacity: 0.55; } }
 
         /* ── History delete button ── */
         .hist-group .hist-delete { opacity: 0; transition: opacity 0.2s; }
         .hist-group:hover .hist-delete { opacity: 1; }
-        /* BUG FIX: Always show delete on touch devices */
-        @media (hover: none) {
-          .hist-group .hist-delete { opacity: 0.7; }
-        }
-
-        /* ── Emotion calendar dots ── */
-        .cal-dot { transition: transform 0.3s, box-shadow 0.3s; }
-        .cal-dot:hover { transform: scale(1.3) rotate(6deg); box-shadow: 0 4px 14px rgba(0,0,0,0.2); }
+        @media (hover: none) { .hist-group .hist-delete { opacity: 0.7; } }
 
         /* ── Prevent iOS zoom on input focus ── */
         textarea, input, select { font-size: 16px !important; }
-
-        /* ── Prevent double-tap zoom on buttons ── */
         button, a { touch-action: manipulation; }
 
         /* ── Textarea no-scrollbar ── */
@@ -1272,15 +1263,9 @@ export default function CurhatPage() {
         .z-85  { z-index: 85; }
         .z-100 { z-index: 100; }
 
-        /* ── Desktop sidebar always visible via CSS ── */
-        @media (min-width: 1024px) {
-          .kp-sidebar { transform: translateX(0) !important; position: relative !important; }
-        }
-
         /* ── iPhone safe area insets ── */
         .safe-top    { padding-top: max(12px, env(safe-area-inset-top)); }
         .safe-bottom { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
-        .safe-bottom-xs { padding-bottom: max(8px, env(safe-area-inset-bottom)); }
 
         /* ── Message bubble polish ── */
         .bubble-user {
@@ -1297,14 +1282,6 @@ export default function CurhatPage() {
           box-shadow: 0 2px 12px rgba(0,0,0,0.05);
         }
 
-        /* ── Quick reply chips ── */
-        .quick-chip {
-          backdrop-filter: blur(12px);
-          transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1);
-        }
-        .quick-chip:hover { transform: scale(1.06) translateY(-1px); }
-        .quick-chip:active { transform: scale(0.96); }
-
         /* ── Input area glass ── */
         .input-glass {
           backdrop-filter: blur(28px);
@@ -1315,180 +1292,183 @@ export default function CurhatPage() {
           box-shadow: 0 0 0 2px rgba(59,130,246,0.22), 0 12px 48px rgba(0,0,0,0.08) !important;
         }
 
-        /* ── Feature grid buttons ── */
-        .feature-btn {
-          transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1);
-        }
-        .feature-btn:hover { transform: scale(1.08) translateY(-2px); }
-        .feature-btn:active { transform: scale(0.94); }
-
-        /* ── Sidebar smooth transitions ── */
-        .kp-sidebar { transition: transform 0.45s cubic-bezier(0.32,0.72,0,1); }
-
         /* ── Better focus rings ── */
         button:focus-visible { outline: 2px solid rgba(59,130,246,0.6); outline-offset: 2px; }
         textarea:focus-visible, input:focus-visible { outline: none; }
-
-        /* ── Affirmation card shimmer ── */
-        .affirmation-shimmer {
-          background: linear-gradient(90deg, var(--surface) 0%, var(--surface-2) 50%, var(--surface) 100%);
-          background-size: 200% auto;
-        }
       `}</style>
 
-      {/* ✅ PERUBAHAN UTAMA: h-screen diganti menjadi h-[100dvh] dengan ukuran mutlak */}
       <div className="kp-app flex h-[100dvh] w-full overflow-hidden relative transition-colors duration-1000" style={{ background: mainBgColor } as React.CSSProperties}>
 
-        {/* ── Mesh Background Orbs ── */}
+        {/* ── Background Orbs (Optimized with Framer Motion) ── */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden opacity-80" style={{ zIndex: 0 }}>
           {[
-            { bg: currentTheme.orb1, delay: '0s', size: '80vw', pos: '-top-[20vh] -left-[10vw]' },
-            { bg: currentTheme.orb2, delay: '3s', size: '70vw', pos: 'top-[10vh] -right-[15vw]' },
-            { bg: currentTheme.orb3, delay: '6s', size: '90vw', pos: '-bottom-[30vh] left-[5vw]' },
+            { bg: currentTheme.orb1, size: '80vw', pos: { top: '-20vh', left: '-10vw' } },
+            { bg: currentTheme.orb2, size: '70vw', pos: { top: '10vh', right: '-15vw' } },
+            { bg: currentTheme.orb3, size: '90vw', pos: { bottom: '-30vh', left: '5vw' } },
           ].map((orb, i) => (
-            <div key={i} className="absolute rounded-full anim-orb-slow" style={{
-              width: orb.size, height: orb.size, background: orb.bg,
-              filter: 'blur(100px)', animationDelay: orb.delay,
-              mixBlendMode: dark ? 'screen' : 'multiply',
-              ...(i === 0 ? { top: '-20vh', left: '-10vw' } : i === 1 ? { top: '10vh', right: '-15vw' } : { bottom: '-30vh', left: '5vw' }),
-            }} />
+            <motion.div key={i} className="absolute rounded-full bg-orb" 
+              animate={{ 
+                x: [0, i===1 ? -20 : 30, i===2 ? 20 : -10, 0], 
+                y: [0, i===0 ? -30 : 20, i===1 ? -20 : 10, 0],
+                scale: [1, 1.05, 0.95, 1],
+                rotate: [0, 5, -5, 0]
+              }}
+              transition={{ duration: 15 + i * 2, repeat: Infinity, ease: "linear" }}
+              style={{
+                width: orb.size, height: orb.size, background: orb.bg,
+                filter: 'blur(100px)',
+                ...orb.pos
+              }} />
           ))}
         </div>
 
-        {/* ── Overlays ── */}
-        {showZenCanvas && <FadingCanvasOverlay onClose={() => setShowZenCanvas(false)} />}
-        {showBalloon && <HopeBalloonOverlay onClose={() => setShowBalloon(false)} />}
-        {showBreathing && <BreathingOverlay onClose={() => setShowBreathing(false)} />}
-        {showBurnOverlay && <BurnBebanOverlay onClose={() => setShowBurnOverlay(false)} />}
-        {showBubbleWrap && <BubbleWrapOverlay onClose={() => setShowBubbleWrap(false)} />}
-        {showGrounding && <GroundingOverlay onClose={() => setShowGrounding(false)} />}
-        {showCapsule && <TimeCapsuleOverlay capsules={capsules} setCapsules={setCapsules} onClose={() => setShowCapsule(false)} />}
-        {showFutureSelf && <FutureSelfOverlay history={allMessages} userName={userName} onClose={() => setShowFutureSelf(false)} />}
-        {showMoodCheckin && <MoodCheckinModal onSelect={handleMoodSelect} onSkip={handleMoodSkip} />}
-        {showConfetti && <ConfettiRain />}
-        {showRenameModal && <RenameModal initialName={userName} onSave={name => { localStorage.setItem(NAME_KEY, name); setUserName(name); setShowRenameModal(false) }} onClose={() => setShowRenameModal(false)} />}
+        {/* ── Overlays (Wrapped with AnimatePresence) ── */}
+        <AnimatePresence>
+          {showZenCanvas && <FadingCanvasOverlay key="zen" onClose={() => setShowZenCanvas(false)} />}
+          {showBalloon && <HopeBalloonOverlay key="balloon" onClose={() => setShowBalloon(false)} />}
+          {showBreathing && <BreathingOverlay key="breathe" onClose={() => setShowBreathing(false)} />}
+          {showBurnOverlay && <BurnBebanOverlay key="burn" onClose={() => setShowBurnOverlay(false)} />}
+          {showBubbleWrap && <BubbleWrapOverlay key="bubble" onClose={() => setShowBubbleWrap(false)} />}
+          {showGrounding && <GroundingOverlay key="ground" onClose={() => setShowGrounding(false)} />}
+          {showCapsule && <TimeCapsuleOverlay key="capsule" capsules={capsules} setCapsules={setCapsules} onClose={() => setShowCapsule(false)} />}
+          {showFutureSelf && <FutureSelfOverlay key="future" history={allMessages} userName={userName} onClose={() => setShowFutureSelf(false)} />}
+          {showMoodCheckin && <MoodCheckinModal key="mood" onSelect={handleMoodSelect} onSkip={handleMoodSkip} />}
+          {showRenameModal && <RenameModal key="rename" initialName={userName} onSave={name => { localStorage.setItem(NAME_KEY, name); setUserName(name); setShowRenameModal(false) }} onClose={() => setShowRenameModal(false)} />}
+          
+          {/* ── SOS Modal ── */}
+          {showSOS && (
+            <motion.div key="sos" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)' }}>
+              <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="p-8 rounded-4xl max-w-sm w-full shadow-2xl relative" style={{ background: 'var(--surface)', border: '1px solid var(--border-2)' }}>
+                <button onClick={() => setShowSOS(false)} className="absolute top-6 right-6 w-9 h-9 rounded-full flex items-center justify-center transition-all hover:scale-110" style={{ background: 'var(--surface-2)', color: 'var(--text-faint)' }}>✕</button>
+                <div className="text-center mb-8">
+                  <motion.div animate={{ scale: [1, 1.1, 1], opacity: [1, 0.8, 1] }} transition={{ duration: 2, repeat: Infinity }} className="w-20 h-20 rounded-full flex items-center justify-center text-4xl mx-auto mb-5" style={{ background: 'rgba(239,68,68,0.1)' }}>🆘</motion.div>
+                  <h2 className="text-2xl font-bold" style={{ color: 'var(--text)' }}>Bantuan Darurat</h2>
+                  <p className="text-sm mt-2 leading-relaxed" style={{ color: 'var(--text-faint)' }}>Kamu berharga, {userName}. Jangan ragu untuk meminta bantuan.</p>
+                </div>
+                <div className="flex flex-col gap-4">
+                  <motion.a whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} href="tel:119" className="p-5 rounded-2xl flex justify-between items-center"
+                    style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)' }}>
+                    <div><p className="font-bold" style={{ color: 'var(--text)' }}>Layanan Sejiwa</p><p className="text-xs" style={{ color: 'var(--text-faint)' }}>Kemenkes RI</p></div>
+                    <span className="px-4 py-2 rounded-xl text-sm font-bold text-white" style={{ background: '#3b82f6' }}>119 ext 8</span>
+                  </motion.a>
+                  <motion.a whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} href="https://www.intothelightid.org" target="_blank" rel="noreferrer" className="p-5 rounded-2xl flex justify-between items-center"
+                    style={{ background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.2)' }}>
+                    <div><p className="font-bold" style={{ color: 'var(--text)' }}>Into The Light</p><p className="text-xs" style={{ color: 'var(--text-faint)' }}>Konseling</p></div>
+                    <span className="px-4 py-2 rounded-xl text-sm font-bold text-white" style={{ background: '#f97316' }}>Website ➔</span>
+                  </motion.a>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
 
-        {/* Zen mode exit button */}
-        {zenMode && (
-          <button onClick={() => setZenMode(false)} className="fixed top-6 right-6 px-5 py-2.5 rounded-full font-bold text-sm transition-all shadow-lg hover:scale-105 anim-fade-in"
-            style={{ background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.2)', color: 'var(--text)', backdropFilter: 'blur(16px)', zIndex: 50 }}>
-            Keluar Mode Fokus ✕
-          </button>
-        )}
+          {/* ── PIN Setup Modal ── */}
+          {showPinSetup && (
+            <motion.div key="pin" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)' }}>
+              <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="p-8 rounded-4xl max-w-sm w-full shadow-2xl text-center relative" style={{ background: 'var(--surface)', border: '1px solid var(--border-2)' }}>
+                <button onClick={() => { setShowPinSetup(false); setPinSetupInput(''); setPinSetupMsg('') }} className="absolute top-6 right-6 w-9 h-9 rounded-full flex items-center justify-center hover:scale-110 transition-all" style={{ background: 'var(--surface-2)', color: 'var(--text-faint)' }}>✕</button>
+                <div className="text-5xl mb-5">🔐</div>
+                <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--text)' }}>{savedPin ? 'Ubah/Hapus PIN' : 'Buat Keamanan PIN'}</h2>
+                <p className="text-xs mb-6" style={{ color: 'var(--text-faint)' }}>PIN 4 digit untuk mengunci privasimu</p>
+                <input type="password" inputMode="numeric" maxLength={4} placeholder="•  •  •  •"
+                  className="w-full text-center text-2xl font-bold tracking-widest p-5 rounded-2xl mb-3 outline-none transition-all"
+                  style={{ background: 'var(--surface-2)', border: '2px solid var(--border-2)', color: 'var(--text)' }}
+                  value={pinSetupInput} onChange={e => { setPinSetupInput(e.target.value.replace(/\D/g, '')); setPinSetupMsg('') }} />
+                {pinSetupMsg && <p className="text-xs font-bold mb-4" style={{ color: pinSetupMsg.includes('Berhasil') ? '#22c55e' : '#ef4444' }}>{pinSetupMsg}</p>}
+                <div className="flex gap-3 mt-2">
+                  <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => {
+                    if (pinSetupInput.length !== 4) { setPinSetupMsg('Harus persis 4 digit!'); return }
+                    localStorage.setItem(PIN_KEY, pinSetupInput); setSavedPin(pinSetupInput); setPinSetupMsg('✓ PIN Berhasil Disimpan!')
+                    setTimeout(() => { setPinSetupInput(''); setPinSetupMsg(''); setShowPinSetup(false) }, 1200)
+                  }} className="flex-1 py-4 rounded-2xl font-bold text-white" style={{ background: '#3b82f6' }}>Simpan</motion.button>
+                  {savedPin && <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => {
+                    localStorage.removeItem(PIN_KEY); setSavedPin(null); setPinSetupMsg('PIN Dihapus!')
+                    setTimeout(() => { setPinSetupInput(''); setPinSetupMsg(''); setShowPinSetup(false) }, 1000)
+                  }} className="flex-1 py-4 rounded-2xl font-bold" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}>Hapus PIN</motion.button>}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
 
-        {/* ── SOS Modal ── */}
-        {showSOS && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 anim-fade-in" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)' }}>
-            <div className="p-8 rounded-4xl max-w-sm w-full shadow-2xl relative anim-slide-up" style={{ background: 'var(--surface)', border: '1px solid var(--border-2)' }}>
-              <button onClick={() => setShowSOS(false)} className="absolute top-6 right-6 w-9 h-9 rounded-full flex items-center justify-center transition-all hover:scale-110" style={{ background: 'var(--surface-2)', color: 'var(--text-faint)' }}>✕</button>
-              <div className="text-center mb-8">
-                <div className="w-20 h-20 rounded-full flex items-center justify-center text-4xl mx-auto mb-5" style={{ background: 'rgba(239,68,68,0.1)', animation: 'kPulse 2s ease-in-out infinite' }}>🆘</div>
-                <h2 className="text-2xl font-bold" style={{ color: 'var(--text)' }}>Bantuan Darurat</h2>
-                <p className="text-sm mt-2 leading-relaxed" style={{ color: 'var(--text-faint)' }}>Kamu berharga, {userName}. Jangan ragu untuk meminta bantuan.</p>
-              </div>
-              <div className="flex flex-col gap-4">
-                <a href="tel:119" className="p-5 rounded-2xl flex justify-between items-center transition-all hover:scale-[1.02]"
-                  style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)' }}>
-                  <div><p className="font-bold" style={{ color: 'var(--text)' }}>Layanan Sejiwa</p><p className="text-xs" style={{ color: 'var(--text-faint)' }}>Kemenkes RI</p></div>
-                  <span className="px-4 py-2 rounded-xl text-sm font-bold text-white" style={{ background: '#3b82f6' }}>119 ext 8</span>
-                </a>
-                <a href="https://www.intothelightid.org" target="_blank" rel="noreferrer" className="p-5 rounded-2xl flex justify-between items-center transition-all hover:scale-[1.02]"
-                  style={{ background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.2)' }}>
-                  <div><p className="font-bold" style={{ color: 'var(--text)' }}>Into The Light</p><p className="text-xs" style={{ color: 'var(--text-faint)' }}>Konseling</p></div>
-                  <span className="px-4 py-2 rounded-xl text-sm font-bold text-white" style={{ background: '#f97316' }}>Website ➔</span>
-                </a>
-              </div>
-            </div>
-          </div>
-        )}
+          {/* ── Gratitude Modal ── */}
+          {showGratitude && (
+            <motion.div key="gratitude" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)' }}>
+              <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="p-6 sm:p-8 rounded-4xl max-w-lg w-full shadow-2xl relative flex flex-col max-h-[85vh]" style={{ background: 'var(--surface)', border: '1px solid rgba(234,179,8,0.2)' }}>
+                <button onClick={() => setShowGratitude(false)} className="absolute top-6 right-6 w-9 h-9 rounded-full flex items-center justify-center hover:scale-110 transition-all" style={{ background: 'var(--surface-2)', color: 'var(--text-faint)' }}>✕</button>
+                <h2 className="text-2xl font-bold mb-2" style={{ color: '#ca8a04' }}>✨ Toples Syukur</h2>
+                <p className="text-sm mb-6" style={{ color: 'var(--text-faint)' }}>Satu hal kecil yang membuatmu tersenyum hari ini?</p>
+                <div className="flex gap-3 mb-6">
+                  <input value={newGratitude} onChange={e => setNewGratitude(e.target.value)} placeholder="Aku bersyukur karena..."
+                    onKeyDown={e => e.key === 'Enter' && addGratitude()}
+                    className="flex-1 p-4 rounded-2xl outline-none text-sm transition-all min-w-0"
+                    style={{ background: 'var(--surface-2)', border: '2px solid var(--border-2)', color: 'var(--text)' }} />
+                  <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={addGratitude} className="flex-shrink-0 px-5 rounded-2xl text-2xl font-bold text-white" style={{ background: '#eab308' }}>+</motion.button>
+                </div>
+                <div className="flex-1 overflow-y-auto space-y-3">
+                  <AnimatePresence>
+                    {gratitudes.length === 0
+                      ? <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center text-sm mt-10 italic" style={{ color: 'var(--text-faint)' }}>Toplesmu masih kosong. Mulai isi dengan kebahagiaan pertamamu.</motion.p>
+                      : gratitudes.map(g => (
+                        <motion.div layout initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} key={g.id} className="p-5 rounded-2xl shadow-sm" style={{ background: 'var(--surface-2)', border: '1px solid rgba(234,179,8,0.15)' }}>
+                          <p className="text-sm leading-relaxed" style={{ color: 'var(--text)' }}>"{g.text}"</p>
+                          <p className="text-xs font-bold uppercase tracking-wider mt-3" style={{ color: 'rgba(202,138,4,0.7)' }}>{new Date(g.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                        </motion.div>
+                      ))}
+                  </AnimatePresence>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
 
-        {/* ── PIN Setup Modal ── */}
-        {showPinSetup && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 anim-fade-in" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)' }}>
-            <div className="p-8 rounded-4xl max-w-sm w-full shadow-2xl text-center relative anim-slide-up" style={{ background: 'var(--surface)', border: '1px solid var(--border-2)' }}>
-              <button onClick={() => { setShowPinSetup(false); setPinSetupInput(''); setPinSetupMsg('') }} className="absolute top-6 right-6 w-9 h-9 rounded-full flex items-center justify-center hover:scale-110 transition-all" style={{ background: 'var(--surface-2)', color: 'var(--text-faint)' }}>✕</button>
-              <div className="text-5xl mb-5">🔐</div>
-              <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--text)' }}>{savedPin ? 'Ubah/Hapus PIN' : 'Buat Keamanan PIN'}</h2>
-              <p className="text-xs mb-6" style={{ color: 'var(--text-faint)' }}>PIN 4 digit untuk mengunci privasimu</p>
-              <input type="password" inputMode="numeric" maxLength={4} placeholder="•  •  •  •"
-                className="w-full text-center text-2xl font-bold tracking-widest p-5 rounded-2xl mb-3 outline-none transition-all"
-                style={{ background: 'var(--surface-2)', border: '2px solid var(--border-2)', color: 'var(--text)' }}
-                value={pinSetupInput} onChange={e => { setPinSetupInput(e.target.value.replace(/\D/g, '')); setPinSetupMsg('') }} />
-              {pinSetupMsg && <p className="text-xs font-bold mb-4" style={{ color: pinSetupMsg.includes('Berhasil') ? '#22c55e' : '#ef4444' }}>{pinSetupMsg}</p>}
-              <div className="flex gap-3 mt-2">
-                <button onClick={() => {
-                  if (pinSetupInput.length !== 4) { setPinSetupMsg('Harus persis 4 digit!'); return }
-                  localStorage.setItem(PIN_KEY, pinSetupInput); setSavedPin(pinSetupInput); setPinSetupMsg('✓ PIN Berhasil Disimpan!')
-                  setTimeout(() => { setPinSetupInput(''); setPinSetupMsg(''); setShowPinSetup(false) }, 1200)
-                }} className="flex-1 py-4 rounded-2xl font-bold text-white" style={{ background: '#3b82f6' }}>Simpan</button>
-                {savedPin && <button onClick={() => {
-                  localStorage.removeItem(PIN_KEY); setSavedPin(null); setPinSetupMsg('PIN Dihapus!')
-                  setTimeout(() => { setPinSetupInput(''); setPinSetupMsg(''); setShowPinSetup(false) }, 1000)
-                }} className="flex-1 py-4 rounded-2xl font-bold" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}>Hapus PIN</button>}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Gratitude Modal ── */}
-        {showGratitude && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 anim-fade-in" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)' }}>
-            <div className="p-6 sm:p-8 rounded-4xl max-w-lg w-full shadow-2xl relative flex flex-col max-h-[85vh] anim-slide-up" style={{ background: 'var(--surface)', border: '1px solid rgba(234,179,8,0.2)' }}>
-              <button onClick={() => setShowGratitude(false)} className="absolute top-6 right-6 w-9 h-9 rounded-full flex items-center justify-center hover:scale-110 transition-all" style={{ background: 'var(--surface-2)', color: 'var(--text-faint)' }}>✕</button>
-              <h2 className="text-2xl font-bold mb-2" style={{ color: '#ca8a04' }}>✨ Toples Syukur</h2>
-              <p className="text-sm mb-6" style={{ color: 'var(--text-faint)' }}>Satu hal kecil yang membuatmu tersenyum hari ini?</p>
-              <div className="flex gap-3 mb-6">
-                <input value={newGratitude} onChange={e => setNewGratitude(e.target.value)} placeholder="Aku bersyukur karena..."
-                  onKeyDown={e => e.key === 'Enter' && addGratitude()}
-                  className="flex-1 p-4 rounded-2xl outline-none text-sm transition-all min-w-0"
-                  style={{ background: 'var(--surface-2)', border: '2px solid var(--border-2)', color: 'var(--text)' }} />
-                <button onClick={addGratitude} className="flex-shrink-0 px-5 rounded-2xl text-2xl font-bold text-white transition-all hover:scale-105" style={{ background: '#eab308' }}>+</button>
-              </div>
-              <div className="flex-1 overflow-y-auto space-y-3">
-                {gratitudes.length === 0
-                  ? <p className="text-center text-sm mt-10 italic" style={{ color: 'var(--text-faint)' }}>Toplesmu masih kosong. Mulai isi dengan kebahagiaan pertamamu.</p>
-                  : gratitudes.map(g => (
-                    <div key={g.id} className="p-5 rounded-2xl shadow-sm" style={{ background: 'var(--surface-2)', border: '1px solid rgba(234,179,8,0.15)' }}>
-                      <p className="text-sm leading-relaxed" style={{ color: 'var(--text)' }}>"{g.text}"</p>
-                      <p className="text-xs font-bold uppercase tracking-wider mt-3" style={{ color: 'rgba(202,138,4,0.7)' }}>{new Date(g.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+          {/* ── AI Insight Modal ── */}
+          {showInsight && (
+            <motion.div key="insight" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)' }}>
+              <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="p-6 sm:p-8 rounded-4xl max-w-lg w-full shadow-2xl relative" style={{ background: 'var(--surface)', border: '1px solid var(--border-2)' }}>
+                <button onClick={() => setShowInsight(false)} className="absolute top-6 right-6 w-9 h-9 rounded-full flex items-center justify-center hover:scale-110 transition-all" style={{ background: 'var(--surface-2)', color: 'var(--text-faint)' }}>✕</button>
+                <h2 className="text-xl font-bold mb-2 flex items-center gap-3" style={{ color: '#3b82f6' }}>
+                  <span className="p-2.5 rounded-2xl text-xl" style={{ background: 'rgba(59,130,246,0.1)' }}>🧠</span> AI Insight
+                </h2>
+                <p className="text-sm mb-6" style={{ color: 'var(--text-faint)' }}>Analisis mendalam dari semua riwayat curhatanmu.</p>
+                <div className="p-6 rounded-2xl min-h-[200px] flex items-center justify-center text-center" style={{ background: 'var(--surface-2)', border: '1px solid var(--border-2)' }}>
+                  {loadingInsight
+                    ? <div className="flex flex-col items-center gap-4">
+                      <div className="flex gap-2">
+                        {[0, 1, 2].map(i => (
+                          <motion.div key={i} className="w-3 h-3 rounded-full" style={{ background: '#3b82f6' }}
+                            animate={{ y: [0, -8, 0] }} transition={{ duration: 1, repeat: Infinity, delay: i * 0.15 }} />
+                        ))}
+                      </div>
+                      <p className="text-sm font-medium" style={{ color: 'rgba(59,130,246,0.7)' }}>Menganalisis pola emosimu...</p>
                     </div>
-                  ))}
-              </div>
-            </div>
-          </div>
-        )}
+                    : insightData
+                      ? <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-sm leading-relaxed whitespace-pre-wrap text-left w-full" style={{ color: 'var(--text)' }}>{insightData}</motion.p>
+                      : <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={fetchInsight} className="px-8 py-3 rounded-2xl font-bold text-sm text-white" style={{ background: '#3b82f6', boxShadow: '0 8px 24px rgba(59,130,246,0.35)' }}>✨ Mulai Analisis AI</motion.button>}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
 
-        {/* ── AI Insight Modal ── */}
-        {showInsight && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 anim-fade-in" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)' }}>
-            <div className="p-6 sm:p-8 rounded-4xl max-w-lg w-full shadow-2xl relative anim-slide-up" style={{ background: 'var(--surface)', border: '1px solid var(--border-2)' }}>
-              <button onClick={() => setShowInsight(false)} className="absolute top-6 right-6 w-9 h-9 rounded-full flex items-center justify-center hover:scale-110 transition-all" style={{ background: 'var(--surface-2)', color: 'var(--text-faint)' }}>✕</button>
-              <h2 className="text-xl font-bold mb-2 flex items-center gap-3" style={{ color: '#3b82f6' }}>
-                <span className="p-2.5 rounded-2xl text-xl" style={{ background: 'rgba(59,130,246,0.1)' }}>🧠</span> AI Insight
-              </h2>
-              <p className="text-sm mb-6" style={{ color: 'var(--text-faint)' }}>Analisis mendalam dari semua riwayat curhatanmu.</p>
-              <div className="p-6 rounded-2xl min-h-[200px] flex items-center justify-center text-center" style={{ background: 'var(--surface-2)', border: '1px solid var(--border-2)' }}>
-                {loadingInsight
-                  ? <div className="flex flex-col items-center gap-4">
-                    <div className="flex gap-2">{[0, 150, 300].map(d => <div key={d} className="w-3 h-3 rounded-full" style={{ background: '#3b82f6', animation: `kBounce 1s ${d}ms ease-in-out infinite` }} />)}</div>
-                    <p className="text-sm font-medium" style={{ color: 'rgba(59,130,246,0.7)' }}>Menganalisis pola emosimu...</p>
-                  </div>
-                  : insightData
-                    ? <p className="text-sm leading-relaxed whitespace-pre-wrap text-left w-full" style={{ color: 'var(--text)' }}>{insightData}</p>
-                    : <button onClick={fetchInsight} className="px-8 py-3 rounded-2xl font-bold text-sm text-white transition-all hover:scale-105" style={{ background: '#3b82f6', boxShadow: '0 8px 24px rgba(59,130,246,0.35)' }}>✨ Mulai Analisis AI</button>}
-              </div>
-            </div>
-          </div>
-        )}
+          {showConfetti && <ConfettiRain key="confetti" />}
+        </AnimatePresence>
 
         {/* Sidebar overlay (mobile) */}
-        {sidebarOpen && <div className="fixed inset-0 z-30 lg:hidden anim-fade-in" style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(6px)' }} onClick={() => setSidebarOpen(false)} />}
+        <AnimatePresence>
+          {sidebarOpen && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-30 lg:hidden" style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(6px)' }} onClick={() => setSidebarOpen(false)} />}
+        </AnimatePresence>
+
+        {/* Zen mode exit button */}
+        <AnimatePresence>
+          {zenMode && (
+            <motion.button initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} onClick={() => setZenMode(false)} className="fixed top-6 right-6 px-5 py-2.5 rounded-full font-bold text-sm shadow-lg"
+              style={{ background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.2)', color: 'var(--text)', backdropFilter: 'blur(16px)', zIndex: 50 }}>
+              Keluar Mode Fokus ✕
+            </motion.button>
+          )}
+        </AnimatePresence>
 
         {/* ── SIDEBAR ── */}
         {!zenMode && (
-          <aside className="kp-sidebar fixed lg:relative z-40 lg:z-auto w-[280px] sm:w-[300px] h-full flex flex-col"
+          <aside className={`kp-sidebar fixed lg:relative z-40 lg:z-auto w-[280px] sm:w-[300px] h-full flex flex-col transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
             style={{
-              transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
               background: dark ? 'rgba(9,5,30,0.82)' : 'rgba(255,255,255,0.85)',
               backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
               borderRight: '1px solid var(--border-2)', boxShadow: '2px 0 48px rgba(0,0,0,0.12)',
@@ -1519,11 +1499,11 @@ export default function CurhatPage() {
                   )}
                 </div>
               )}
-              <button onClick={() => { setActiveSessionId(null); setInput(''); setError(null); setPendingText(null); setSidebarOpen(false) }}
-                className="w-full py-3 sm:py-4 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2 text-white hover:-translate-y-0.5 active:translate-y-0"
+              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => { setActiveSessionId(null); setInput(''); setError(null); setPendingText(null); setSidebarOpen(false) }}
+                className="w-full py-3 sm:py-4 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 text-white"
                 style={{ background: '#3b82f6', boxShadow: '0 6px 20px rgba(59,130,246,0.35)' }}>
                 ✏️ Curhat Baru
-              </button>
+              </motion.button>
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 sm:px-5 pb-4">
@@ -1539,13 +1519,14 @@ export default function CurhatPage() {
                   { icon: '🎨', label: 'Kanvas', fn: () => openOverlay(() => setShowZenCanvas(true)), color: '#9ca3af' },
                   { icon: '🎈', label: 'Balon', fn: () => openOverlay(() => setShowBalloon(true)), color: '#3b82f6' },
                   { icon: '✉️', label: 'Surat', fn: () => openOverlay(() => setShowFutureSelf(true)), color: '#16a34a' },
-                ].map(btn => (
-                  <button key={btn.label} onClick={btn.fn}
-                    className="feature-btn py-3 rounded-2xl text-xs font-bold flex flex-col items-center gap-1.5 shadow-sm"
+                ].map((btn, i) => (
+                  <motion.button key={btn.label} onClick={btn.fn}
+                    whileHover={{ scale: 1.08, y: -2 }} whileTap={{ scale: 0.94 }}
+                    className="py-3 rounded-2xl text-xs font-bold flex flex-col items-center gap-1.5 shadow-sm"
                     style={{ background: `${btn.color}12`, color: btn.color, border: `1.5px solid ${btn.color}30` }}>
                     <span className="text-xl">{btn.icon}</span>
                     <span className="leading-tight">{btn.label}</span>
-                  </button>
+                  </motion.button>
                 ))}
               </div>
 
@@ -1557,20 +1538,24 @@ export default function CurhatPage() {
                 <span className="text-xs opacity-60 transition-transform duration-300" style={{ transform: showStats ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
               </button>
 
-              {showStats && (
-                <div className="mb-5 p-4 sm:p-5 rounded-2xl anim-slide-up" style={{ background: 'var(--surface-2)', border: '1px solid var(--border-2)' }}>
-                  <EmotionChart history={allMessages} />
-                  <EmotionCalendar messages={allMessages} />
-                  <div className="mt-4 flex flex-col gap-2">
-                    <button onClick={() => { setShowInsight(true); fetchInsight() }} className="w-full py-2.5 text-xs font-bold rounded-xl flex justify-center items-center gap-2 transition-all hover:scale-[1.02]"
-                      style={{ background: 'rgba(59,130,246,0.1)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.2)' }}>🧠 AI Insight</button>
-                    <button onClick={() => setShowFutureSelf(true)} className="w-full py-2.5 text-xs font-bold rounded-xl flex justify-center items-center gap-2 transition-all hover:scale-[1.02]"
-                      style={{ background: 'rgba(134,239,172,0.1)', color: '#16a34a', border: '1px solid rgba(134,239,172,0.2)' }}>✉️ Surat Masa Depan</button>
-                    {allMessages.length > 0 && <button onClick={handleExport} className="w-full py-2.5 text-xs font-bold rounded-xl flex justify-center items-center gap-2 transition-all hover:scale-[1.02] text-white"
-                      style={{ background: '#3b82f6', boxShadow: '0 4px 14px rgba(59,130,246,0.35)' }}>📸 Kenopia Wrapped</button>}
-                  </div>
-                </div>
-              )}
+              <AnimatePresence>
+                {showStats && (
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                    <div className="mb-5 p-4 sm:p-5 rounded-2xl" style={{ background: 'var(--surface-2)', border: '1px solid var(--border-2)' }}>
+                      <EmotionChart history={allMessages} />
+                      <EmotionCalendar messages={allMessages} />
+                      <div className="mt-4 flex flex-col gap-2">
+                        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => { setShowInsight(true); fetchInsight() }} className="w-full py-2.5 text-xs font-bold rounded-xl flex justify-center items-center gap-2"
+                          style={{ background: 'rgba(59,130,246,0.1)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.2)' }}>🧠 AI Insight</motion.button>
+                        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setShowFutureSelf(true)} className="w-full py-2.5 text-xs font-bold rounded-xl flex justify-center items-center gap-2"
+                          style={{ background: 'rgba(134,239,172,0.1)', color: '#16a34a', border: '1px solid rgba(134,239,172,0.2)' }}>✉️ Surat Masa Depan</motion.button>
+                        {allMessages.length > 0 && <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleExport} className="w-full py-2.5 text-xs font-bold rounded-xl flex justify-center items-center gap-2 text-white"
+                          style={{ background: '#3b82f6', boxShadow: '0 4px 14px rgba(59,130,246,0.35)' }}>📸 Kenopia Wrapped</motion.button>}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* History list */}
               <div className="py-2">
@@ -1591,31 +1576,35 @@ export default function CurhatPage() {
                   </div>
                   : filteredSessions.length === 0
                     ? <p className="text-center text-xs py-6 italic" style={{ color: 'var(--text-faint)' }}>Tidak ada hasil untuk "{searchQuery}"</p>
-                    : <div className="flex flex-col gap-1">{[...filteredSessions].reverse().map(session => (
-                      <HistoryItem key={session.id} session={session} active={activeSessionId === session.id}
-                        onClick={() => { setActiveSessionId(session.id); setSidebarOpen(false) }}
-                        onDelete={e => deleteSession(session.id, e)} />
-                    ))}</div>}
+                    : <motion.div layout className="flex flex-col gap-1">
+                        <AnimatePresence>
+                          {[...filteredSessions].reverse().map(session => (
+                            <HistoryItem key={session.id} session={session} active={activeSessionId === session.id}
+                              onClick={() => { setActiveSessionId(session.id); setSidebarOpen(false) }}
+                              onDelete={e => deleteSession(session.id, e)} />
+                          ))}
+                        </AnimatePresence>
+                      </motion.div>}
               </div>
             </div>
 
             {/* Sidebar footer */}
             <div className="p-4 sm:p-5 flex flex-col gap-2.5" style={{ borderTop: '1px solid var(--border-2)' }}>
               <div className="flex gap-2.5">
-                <button onClick={() => setShowPinSetup(true)} className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 hover:scale-105"
+                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setShowPinSetup(true)} className="flex-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2"
                   style={{ background: 'var(--surface-2)', border: '1px solid var(--border-2)', color: 'var(--text-muted)' }}>
                   🔒 {savedPin ? 'PIN' : 'Set PIN'}
-                </button>
-                <button onClick={() => setShowRenameModal(true)} className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 hover:scale-105"
+                </motion.button>
+                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setShowRenameModal(true)} className="flex-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2"
                   style={{ background: 'rgba(59,130,246,0.08)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.2)' }}>
                   👤 Nama
-                </button>
+                </motion.button>
               </div>
               {sessions.length > 0 && (
-                <button onClick={clearHistory} className="w-full py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 hover:scale-105"
+                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={clearHistory} className="w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2"
                   style={{ background: 'var(--surface-2)', border: '1px solid var(--border-2)', color: 'var(--text-faint)' }}>
                   🗑️ Hapus Riwayat
-                </button>
+                </motion.button>
               )}
             </div>
           </aside>
@@ -1637,7 +1626,7 @@ export default function CurhatPage() {
                 <div className="min-w-0">
                   <p className="font-bold text-sm sm:text-base leading-tight truncate" style={{ color: 'var(--text)' }}>
                     {loading
-                      ? <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full inline-block" style={{ background: '#3b82f6', animation: 'kPulse 1.5s ease-in-out infinite' }} />Mengetik...</span>
+                      ? <span className="flex items-center gap-2"><motion.span animate={{ opacity: [1, 0.4, 1] }} transition={{ duration: 1.5, repeat: Infinity }} className="w-2 h-2 rounded-full inline-block" style={{ background: '#3b82f6' }} />Mengetik...</span>
                       : activeSessionId ? <>{EMOTIONS[activeMessages[activeMessages.length - 1]?.emotion ?? 'sedih'].emoji} Sesi Tersimpan</> : <>💬 Kenopia AI</>}
                   </p>
                   <p className="text-xs leading-tight mt-0.5 flex items-center gap-1.5 truncate" style={{ color: 'var(--text-faint)' }}>
@@ -1654,85 +1643,91 @@ export default function CurhatPage() {
 
                 {/* Persona dropdown */}
                 <div className="relative" ref={personaDDRef}>
-                  <button className="px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 transition-all shadow-sm hover:scale-105"
+                  <motion.button whileHover={{ scale: 1.05 }} className="px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 shadow-sm"
                     style={{ background: 'var(--surface-2)', border: '1px solid var(--border-2)', color: 'var(--text-muted)' }}
                     onClick={() => { setShowPersonaDD(v => !v); setShowAmbientDD(false); setShowThemeDD(false) }}>
                     🎭 {persona === 'sahabat' ? 'Sahabat' : persona === 'psikolog' ? 'Psikolog' : 'Filsuf Zen'} <span className="opacity-40 text-xs">▼</span>
-                  </button>
-                  {showPersonaDD && (
-                    <>
-                      <div className="fixed inset-0" style={{ zIndex: 90 }} onClick={() => setShowPersonaDD(false)} />
-                      <div className="absolute right-0 top-full mt-2 w-44" style={{ zIndex: 91 }}>
-                        <div className="rounded-2xl shadow-xl flex flex-col overflow-hidden p-2" style={{ background: dark ? 'rgba(15,23,42,0.97)' : 'rgba(255,255,255,0.99)', border: '1px solid var(--border-2)', backdropFilter: 'blur(20px)' }}>
-                          {(['sahabat', 'psikolog', 'filsuf'] as const).map(p => (
-                            <button key={p} onClick={() => { setPersona(p); setShowPersonaDD(false) }} className="text-left px-4 py-3 text-xs font-semibold rounded-xl transition-all flex items-center gap-2"
-                              style={{ background: persona === p ? 'rgba(59,130,246,0.1)' : 'transparent', color: persona === p ? '#3b82f6' : 'var(--text-muted)' }}>
-                              {p === 'sahabat' ? '👋' : p === 'psikolog' ? '🩺' : '🧘'} {p === 'sahabat' ? 'Sahabat' : p === 'psikolog' ? 'Psikolog' : 'Filsuf Zen'}
-                              {persona === p && <span className="ml-auto text-xs">✓</span>}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </>
-                  )}
+                  </motion.button>
+                  <AnimatePresence>
+                    {showPersonaDD && (
+                      <>
+                        <div className="fixed inset-0" style={{ zIndex: 90 }} onClick={() => setShowPersonaDD(false)} />
+                        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="absolute right-0 top-full mt-2 w-44" style={{ zIndex: 91 }}>
+                          <div className="rounded-2xl shadow-xl flex flex-col overflow-hidden p-2" style={{ background: dark ? 'rgba(15,23,42,0.97)' : 'rgba(255,255,255,0.99)', border: '1px solid var(--border-2)', backdropFilter: 'blur(20px)' }}>
+                            {(['sahabat', 'psikolog', 'filsuf'] as const).map(p => (
+                              <button key={p} onClick={() => { setPersona(p); setShowPersonaDD(false) }} className="text-left px-4 py-3 text-xs font-semibold rounded-xl transition-all flex items-center gap-2"
+                                style={{ background: persona === p ? 'rgba(59,130,246,0.1)' : 'transparent', color: persona === p ? '#3b82f6' : 'var(--text-muted)' }}>
+                                {p === 'sahabat' ? '👋' : p === 'psikolog' ? '🩺' : '🧘'} {p === 'sahabat' ? 'Sahabat' : p === 'psikolog' ? 'Psikolog' : 'Filsuf Zen'}
+                                {persona === p && <span className="ml-auto text-xs">✓</span>}
+                              </button>
+                            ))}
+                          </div>
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
                 </div>
 
                 {/* Ambient dropdown */}
                 <div className="relative" ref={ambientDDRef}>
-                  <button className="px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 transition-all shadow-sm hover:scale-105"
+                  <motion.button whileHover={{ scale: 1.05 }} className="px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 shadow-sm"
                     style={{ background: ambient ? '#3b82f6' : 'var(--surface-2)', border: `1px solid ${ambient ? 'transparent' : 'var(--border-2)'}`, color: ambient ? 'white' : 'var(--text-muted)' }}
                     onClick={() => { setShowAmbientDD(v => !v); setShowPersonaDD(false); setShowThemeDD(false) }}>
                     🎵 {ambient === 'hujan' ? 'Hujan' : ambient === 'api' ? 'Api' : ambient === 'alam' ? 'Alam' : 'Musik'} <span className="opacity-40 text-xs">▼</span>
-                  </button>
-                  {showAmbientDD && (
-                    <>
-                      <div className="fixed inset-0" style={{ zIndex: 90 }} onClick={() => setShowAmbientDD(false)} />
-                      <div className="absolute right-0 top-full mt-2 w-48" style={{ zIndex: 91 }}>
-                        <div className="rounded-2xl shadow-xl flex flex-col overflow-hidden p-2" style={{ background: dark ? 'rgba(15,23,42,0.97)' : 'rgba(255,255,255,0.99)', border: '1px solid var(--border-2)', backdropFilter: 'blur(20px)' }}>
-                          {(['hujan', 'api', 'alam'] as const).map(a => (
-                            <button key={a} onClick={() => { handlePlayAmbient(a); setShowAmbientDD(false) }} className="text-left px-4 py-3 text-xs font-semibold rounded-xl transition-all flex items-center gap-2"
-                              style={{ background: ambient === a ? 'rgba(59,130,246,0.1)' : 'transparent', color: ambient === a ? '#3b82f6' : 'var(--text-muted)' }}>
-                              {a === 'hujan' ? '🌧️ Hujan Sore' : a === 'api' ? '🔥 Api Unggun' : '🍃 Suara Alam'}
-                              {ambient === a && <span className="ml-auto text-xs">✓</span>}
-                            </button>
-                          ))}
-                          {ambient && <>
-                            <div className="my-1 mx-3 h-px" style={{ background: 'var(--border-2)' }} />
-                            <button onClick={() => { handlePlayAmbient(null); setShowAmbientDD(false) }} className="text-left px-4 py-3 text-xs font-semibold rounded-xl transition-all" style={{ color: '#ef4444' }}>🔇 Matikan Suara</button>
-                          </>}
-                        </div>
-                      </div>
-                    </>
-                  )}
+                  </motion.button>
+                  <AnimatePresence>
+                    {showAmbientDD && (
+                      <>
+                        <div className="fixed inset-0" style={{ zIndex: 90 }} onClick={() => setShowAmbientDD(false)} />
+                        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="absolute right-0 top-full mt-2 w-48" style={{ zIndex: 91 }}>
+                          <div className="rounded-2xl shadow-xl flex flex-col overflow-hidden p-2" style={{ background: dark ? 'rgba(15,23,42,0.97)' : 'rgba(255,255,255,0.99)', border: '1px solid var(--border-2)', backdropFilter: 'blur(20px)' }}>
+                            {(['hujan', 'api', 'alam'] as const).map(a => (
+                              <button key={a} onClick={() => { handlePlayAmbient(a); setShowAmbientDD(false) }} className="text-left px-4 py-3 text-xs font-semibold rounded-xl transition-all flex items-center gap-2"
+                                style={{ background: ambient === a ? 'rgba(59,130,246,0.1)' : 'transparent', color: ambient === a ? '#3b82f6' : 'var(--text-muted)' }}>
+                                {a === 'hujan' ? '🌧️ Hujan Sore' : a === 'api' ? '🔥 Api Unggun' : '🍃 Suara Alam'}
+                                {ambient === a && <span className="ml-auto text-xs">✓</span>}
+                              </button>
+                            ))}
+                            {ambient && <>
+                              <div className="my-1 mx-3 h-px" style={{ background: 'var(--border-2)' }} />
+                              <button onClick={() => { handlePlayAmbient(null); setShowAmbientDD(false) }} className="text-left px-4 py-3 text-xs font-semibold rounded-xl transition-all" style={{ color: '#ef4444' }}>🔇 Matikan Suara</button>
+                            </>}
+                          </div>
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
                 </div>
 
                 {/* Theme picker */}
                 <div className="relative" ref={themeDDRef}>
-                  <button className="w-9 h-9 rounded-full flex items-center justify-center text-base transition-all hover:scale-105"
+                  <motion.button whileHover={{ scale: 1.05 }} className="w-9 h-9 rounded-full flex items-center justify-center text-base"
                     style={{ background: 'var(--surface-2)', border: '1px solid var(--border-2)' }}
-                    onClick={() => { setShowThemeDD(v => !v); setShowPersonaDD(false); setShowAmbientDD(false) }}>{currentTheme.icon}</button>
-                  {showThemeDD && (
-                    <>
-                      <div className="fixed inset-0" style={{ zIndex: 90 }} onClick={() => setShowThemeDD(false)} />
-                      <div className="absolute right-0 top-full mt-2 w-40" style={{ zIndex: 91 }}>
-                        <div className="rounded-2xl shadow-xl flex flex-col p-2" style={{ background: dark ? 'rgba(15,23,42,0.97)' : 'rgba(255,255,255,0.99)', border: '1px solid var(--border-2)', backdropFilter: 'blur(20px)' }}>
-                          <p className="text-xs font-bold uppercase tracking-wider px-2 pb-1" style={{ color: 'var(--text-faint)' }}>Tema Latar</p>
-                          {(Object.keys(BG_THEMES) as BgTheme[]).map(key => (
-                            <button key={key} onClick={() => { handleBgThemeChange(key); setShowThemeDD(false) }} className="text-left px-3 py-2 text-xs font-semibold rounded-xl flex items-center gap-2 transition-all"
-                              style={{ background: bgTheme === key ? 'rgba(59,130,246,0.1)' : 'transparent', color: bgTheme === key ? '#3b82f6' : 'var(--text-muted)' }}>
-                              {BG_THEMES[key].icon} {BG_THEMES[key].label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </>
-                  )}
+                    onClick={() => { setShowThemeDD(v => !v); setShowPersonaDD(false); setShowAmbientDD(false) }}>{currentTheme.icon}</motion.button>
+                  <AnimatePresence>
+                    {showThemeDD && (
+                      <>
+                        <div className="fixed inset-0" style={{ zIndex: 90 }} onClick={() => setShowThemeDD(false)} />
+                        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="absolute right-0 top-full mt-2 w-40" style={{ zIndex: 91 }}>
+                          <div className="rounded-2xl shadow-xl flex flex-col p-2" style={{ background: dark ? 'rgba(15,23,42,0.97)' : 'rgba(255,255,255,0.99)', border: '1px solid var(--border-2)', backdropFilter: 'blur(20px)' }}>
+                            <p className="text-xs font-bold uppercase tracking-wider px-2 pb-1" style={{ color: 'var(--text-faint)' }}>Tema Latar</p>
+                            {(Object.keys(BG_THEMES) as BgTheme[]).map(key => (
+                              <button key={key} onClick={() => { handleBgThemeChange(key); setShowThemeDD(false) }} className="text-left px-3 py-2 text-xs font-semibold rounded-xl flex items-center gap-2 transition-all"
+                                style={{ background: bgTheme === key ? 'rgba(59,130,246,0.1)' : 'transparent', color: bgTheme === key ? '#3b82f6' : 'var(--text-muted)' }}>
+                                {BG_THEMES[key].icon} {BG_THEMES[key].label}
+                              </button>
+                            ))}
+                          </div>
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
                 </div>
 
-                <button onClick={() => setZenMode(true)} className="w-9 h-9 rounded-full flex items-center justify-center text-base transition-all hover:scale-105" style={{ background: 'var(--surface-2)', border: '1px solid var(--border-2)' }} title="Mode Fokus">🧘</button>
-                <button onClick={toggleTheme} className="w-9 h-9 rounded-full flex items-center justify-center text-base transition-all hover:scale-105" style={{ background: 'var(--surface-2)', border: '1px solid var(--border-2)' }}>
+                <motion.button whileHover={{ scale: 1.05 }} onClick={() => setZenMode(true)} className="w-9 h-9 rounded-full flex items-center justify-center text-base" style={{ background: 'var(--surface-2)', border: '1px solid var(--border-2)' }} title="Mode Fokus">🧘</motion.button>
+                <motion.button whileHover={{ scale: 1.05 }} onClick={toggleTheme} className="w-9 h-9 rounded-full flex items-center justify-center text-base" style={{ background: 'var(--surface-2)', border: '1px solid var(--border-2)' }}>
                   {dark ? '☀️' : '🌙'}
-                </button>
+                </motion.button>
               </div>
 
               {/* Mobile controls */}
@@ -1747,24 +1742,26 @@ export default function CurhatPage() {
                     <span>{persona === 'sahabat' ? '👋' : persona === 'psikolog' ? '🩺' : '🧘'}</span>
                     <span className="text-xs opacity-50">▾</span>
                   </button>
-                  {showPersonaDD && (
-                    <>
-                      <div className="fixed inset-0" style={{ zIndex: 90 }} onClick={() => setShowPersonaDD(false)} />
-                      <div className="absolute right-0 top-full mt-2 w-40" style={{ zIndex: 91 }}>
-                        <div className="rounded-2xl shadow-xl flex flex-col overflow-hidden p-2" style={{ background: dark ? 'rgba(15,23,42,0.97)' : 'rgba(255,255,255,0.99)', border: '1px solid var(--border-2)', backdropFilter: 'blur(20px)' }}>
-                          <p className="text-xs font-bold uppercase tracking-wider px-2 pb-1" style={{ color: 'var(--text-faint)' }}>Persona</p>
-                          {(['sahabat', 'psikolog', 'filsuf'] as const).map(p => (
-                            <button key={p} onClick={() => { setPersona(p); setShowPersonaDD(false) }}
-                              className="text-left px-3 py-2.5 text-xs font-semibold rounded-xl transition-all flex items-center gap-2"
-                              style={{ background: persona === p ? 'rgba(59,130,246,0.1)' : 'transparent', color: persona === p ? '#3b82f6' : 'var(--text-muted)' }}>
-                              {p === 'sahabat' ? '👋' : p === 'psikolog' ? '🩺' : '🧘'} {p === 'sahabat' ? 'Sahabat' : p === 'psikolog' ? 'Psikolog' : 'Filsuf Zen'}
-                              {persona === p && <span className="ml-auto">✓</span>}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </>
-                  )}
+                  <AnimatePresence>
+                    {showPersonaDD && (
+                      <>
+                        <div className="fixed inset-0" style={{ zIndex: 90 }} onClick={() => setShowPersonaDD(false)} />
+                        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="absolute right-0 top-full mt-2 w-40" style={{ zIndex: 91 }}>
+                          <div className="rounded-2xl shadow-xl flex flex-col overflow-hidden p-2" style={{ background: dark ? 'rgba(15,23,42,0.97)' : 'rgba(255,255,255,0.99)', border: '1px solid var(--border-2)', backdropFilter: 'blur(20px)' }}>
+                            <p className="text-xs font-bold uppercase tracking-wider px-2 pb-1" style={{ color: 'var(--text-faint)' }}>Persona</p>
+                            {(['sahabat', 'psikolog', 'filsuf'] as const).map(p => (
+                              <button key={p} onClick={() => { setPersona(p); setShowPersonaDD(false) }}
+                                className="text-left px-3 py-2.5 text-xs font-semibold rounded-xl transition-all flex items-center gap-2"
+                                style={{ background: persona === p ? 'rgba(59,130,246,0.1)' : 'transparent', color: persona === p ? '#3b82f6' : 'var(--text-muted)' }}>
+                                {p === 'sahabat' ? '👋' : p === 'psikolog' ? '🩺' : '🧘'} {p === 'sahabat' ? 'Sahabat' : p === 'psikolog' ? 'Psikolog' : 'Filsuf Zen'}
+                                {persona === p && <span className="ml-auto">✓</span>}
+                              </button>
+                            ))}
+                          </div>
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
                 </div>
 
                 {/* Zen mode */}
@@ -1778,27 +1775,29 @@ export default function CurhatPage() {
                     style={{ background: ambient ? '#3b82f6' : 'var(--surface-2)', border: `1px solid ${ambient ? 'transparent' : 'var(--border-2)'}` }}>
                     {ambient === 'hujan' ? '🌧️' : ambient === 'api' ? '🔥' : ambient === 'alam' ? '🍃' : '🎵'}
                   </button>
-                  {showAmbientDD && (
-                    <>
-                      <div className="fixed inset-0" style={{ zIndex: 90 }} onClick={() => setShowAmbientDD(false)} />
-                      <div className="absolute right-0 top-full mt-2 w-44" style={{ zIndex: 91 }}>
-                        <div className="rounded-2xl shadow-xl flex flex-col overflow-hidden p-2" style={{ background: dark ? 'rgba(15,23,42,0.97)' : 'rgba(255,255,255,0.99)', border: '1px solid var(--border-2)', backdropFilter: 'blur(20px)' }}>
-                          {(['hujan', 'api', 'alam'] as const).map(a => (
-                            <button key={a} onClick={() => { handlePlayAmbient(a); setShowAmbientDD(false) }}
-                              className="text-left px-4 py-3 text-xs font-semibold rounded-xl transition-all flex items-center gap-2"
-                              style={{ background: ambient === a ? 'rgba(59,130,246,0.1)' : 'transparent', color: ambient === a ? '#3b82f6' : 'var(--text-muted)' }}>
-                              {a === 'hujan' ? '🌧️ Hujan Sore' : a === 'api' ? '🔥 Api Unggun' : '🍃 Suara Alam'}
-                              {ambient === a && <span className="ml-auto">✓</span>}
-                            </button>
-                          ))}
-                          {ambient && <>
-                            <div className="my-1 mx-3 h-px" style={{ background: 'var(--border-2)' }} />
-                            <button onClick={() => { handlePlayAmbient(null); setShowAmbientDD(false) }} className="text-left px-4 py-3 text-xs font-semibold rounded-xl" style={{ color: '#ef4444' }}>🔇 Matikan Suara</button>
-                          </>}
-                        </div>
-                      </div>
-                    </>
-                  )}
+                  <AnimatePresence>
+                    {showAmbientDD && (
+                      <>
+                        <div className="fixed inset-0" style={{ zIndex: 90 }} onClick={() => setShowAmbientDD(false)} />
+                        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="absolute right-0 top-full mt-2 w-44" style={{ zIndex: 91 }}>
+                          <div className="rounded-2xl shadow-xl flex flex-col overflow-hidden p-2" style={{ background: dark ? 'rgba(15,23,42,0.97)' : 'rgba(255,255,255,0.99)', border: '1px solid var(--border-2)', backdropFilter: 'blur(20px)' }}>
+                            {(['hujan', 'api', 'alam'] as const).map(a => (
+                              <button key={a} onClick={() => { handlePlayAmbient(a); setShowAmbientDD(false) }}
+                                className="text-left px-4 py-3 text-xs font-semibold rounded-xl transition-all flex items-center gap-2"
+                                style={{ background: ambient === a ? 'rgba(59,130,246,0.1)' : 'transparent', color: ambient === a ? '#3b82f6' : 'var(--text-muted)' }}>
+                                {a === 'hujan' ? '🌧️ Hujan Sore' : a === 'api' ? '🔥 Api Unggun' : '🍃 Suara Alam'}
+                                {ambient === a && <span className="ml-auto">✓</span>}
+                              </button>
+                            ))}
+                            {ambient && <>
+                              <div className="my-1 mx-3 h-px" style={{ background: 'var(--border-2)' }} />
+                              <button onClick={() => { handlePlayAmbient(null); setShowAmbientDD(false) }} className="text-left px-4 py-3 text-xs font-semibold rounded-xl" style={{ color: '#ef4444' }}>🔇 Matikan Suara</button>
+                            </>}
+                          </div>
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
                 </div>
 
                 {/* Theme dropdown (mobile) */}
@@ -1808,23 +1807,25 @@ export default function CurhatPage() {
                     style={{ background: 'var(--surface-2)', border: '1px solid var(--border-2)' }}>
                     {currentTheme.icon}
                   </button>
-                  {showThemeDD && (
-                    <>
-                      <div className="fixed inset-0" style={{ zIndex: 90 }} onClick={() => setShowThemeDD(false)} />
-                      <div className="absolute right-0 top-full mt-2 w-40" style={{ zIndex: 91 }}>
-                        <div className="rounded-2xl shadow-xl flex flex-col p-2" style={{ background: dark ? 'rgba(15,23,42,0.97)' : 'rgba(255,255,255,0.99)', border: '1px solid var(--border-2)', backdropFilter: 'blur(20px)' }}>
-                          <p className="text-xs font-bold uppercase tracking-wider px-2 pb-1" style={{ color: 'var(--text-faint)' }}>Tema Latar</p>
-                          {(Object.keys(BG_THEMES) as BgTheme[]).map(key => (
-                            <button key={key} onClick={() => { handleBgThemeChange(key); setShowThemeDD(false) }}
-                              className="text-left px-3 py-2 text-xs font-semibold rounded-xl flex items-center gap-2 transition-all"
-                              style={{ background: bgTheme === key ? 'rgba(59,130,246,0.1)' : 'transparent', color: bgTheme === key ? '#3b82f6' : 'var(--text-muted)' }}>
-                              {BG_THEMES[key].icon} {BG_THEMES[key].label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </>
-                  )}
+                  <AnimatePresence>
+                    {showThemeDD && (
+                      <>
+                        <div className="fixed inset-0" style={{ zIndex: 90 }} onClick={() => setShowThemeDD(false)} />
+                        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="absolute right-0 top-full mt-2 w-40" style={{ zIndex: 91 }}>
+                          <div className="rounded-2xl shadow-xl flex flex-col p-2" style={{ background: dark ? 'rgba(15,23,42,0.97)' : 'rgba(255,255,255,0.99)', border: '1px solid var(--border-2)', backdropFilter: 'blur(20px)' }}>
+                            <p className="text-xs font-bold uppercase tracking-wider px-2 pb-1" style={{ color: 'var(--text-faint)' }}>Tema Latar</p>
+                            {(Object.keys(BG_THEMES) as BgTheme[]).map(key => (
+                              <button key={key} onClick={() => { handleBgThemeChange(key); setShowThemeDD(false) }}
+                                className="text-left px-3 py-2 text-xs font-semibold rounded-xl flex items-center gap-2 transition-all"
+                                style={{ background: bgTheme === key ? 'rgba(59,130,246,0.1)' : 'transparent', color: bgTheme === key ? '#3b82f6' : 'var(--text-muted)' }}>
+                                {BG_THEMES[key].icon} {BG_THEMES[key].label}
+                              </button>
+                            ))}
+                          </div>
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
                 </div>
 
                 {/* Dark mode */}
@@ -1839,7 +1840,7 @@ export default function CurhatPage() {
           {/* ── Chat body ── */}
           <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6 sm:py-8 flex flex-col gap-5 sm:gap-6 relative" style={{ zIndex: 10 }}>
             {activeMessages.length === 0 && !pendingText && (
-              <div className="flex flex-col items-center justify-center flex-1 gap-5 sm:gap-6 text-center py-6 sm:py-10 anim-fade-in">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center flex-1 gap-5 sm:gap-6 text-center py-6 sm:py-10">
                 {/* Logo hero */}
                 <div className="relative">
                   <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl flex items-center justify-center text-4xl sm:text-5xl shadow-2xl"
@@ -1866,63 +1867,68 @@ export default function CurhatPage() {
                 </div>
 
                 {/* Reflection card button */}
-                <button onClick={handleDrawPromptCard}
-                  className="px-7 py-3.5 rounded-full text-sm font-bold transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2"
+                <motion.button whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.95 }} onClick={handleDrawPromptCard}
+                  className="px-7 py-3.5 rounded-full text-sm font-bold flex items-center gap-2"
                   style={{ background: 'var(--surface)', color: '#3b82f6', border: '2px solid rgba(59,130,246,0.25)', boxShadow: '0 6px 24px rgba(59,130,246,0.13)' }}>
                   🃏 Ambil Kartu Refleksi
-                </button>
+                </motion.button>
 
                 {/* Emotion starter chips */}
                 <div className="flex flex-wrap justify-center gap-2 sm:gap-2.5 mt-1 max-w-2xl px-3">
                   {Object.values(EMOTIONS).map((e, idx) => (
-                    <button key={e.label} onClick={() => { setInput(`Aku merasa ${e.label.toLowerCase()} hari ini karena... `); textareaRef.current?.focus() }}
-                      className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all hover:-translate-y-1 hover:shadow-md active:translate-y-0 anim-pop-in"
-                      style={{ background: `${e.color}15`, color: e.color, border: `1.5px solid ${e.color}35`, animationDelay: `${idx * 80}ms` }}>
+                    <motion.button key={e.label} 
+                      initial={{ opacity: 0, y: 15, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ delay: idx * 0.08 }}
+                      whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.95 }}
+                      onClick={() => { setInput(`Aku merasa ${e.label.toLowerCase()} hari ini karena... `); textareaRef.current?.focus() }}
+                      className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-bold shadow-sm"
+                      style={{ background: `${e.color}15`, color: e.color, border: `1.5px solid ${e.color}35` }}>
                       {e.emoji} {e.label}
-                    </button>
+                    </motion.button>
                   ))}
                 </div>
-              </div>
+              </motion.div>
             )}
 
-            {activeMessages.map((msg, idx) => (
-              <div key={msg.id}>
-                <MessageBubble msg={msg} />
-                {idx === activeMessages.length - 1 && !loading && !pendingText && (
-                  <QuickReplies emotion={msg.emotion} onSelect={text => { setInput(text); textareaRef.current?.focus() }} />
-                )}
-              </div>
-            ))}
-
-            {pendingText && <PendingUserBubble text={pendingText} />}
-            {loading && <TypingIndicator />}
-
-            {error && (
-              <div className="anim-fade-in px-6 py-4 rounded-2xl text-sm font-bold shadow-md mx-auto max-w-md w-full text-center"
-                style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}>
-                ⚠️ {error}
-              </div>
-            )}
+            <AnimatePresence initial={false}>
+              {activeMessages.map((msg, idx) => (
+                <motion.div key={msg.id} layout initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+                  <MessageBubble msg={msg} />
+                  {idx === activeMessages.length - 1 && !loading && !pendingText && (
+                    <QuickReplies emotion={msg.emotion} onSelect={text => { setInput(text); textareaRef.current?.focus() }} />
+                  )}
+                </motion.div>
+              ))}
+              {pendingText && <PendingUserBubble key="pending" text={pendingText} />}
+              {loading && <TypingIndicator key="typing" />}
+              {error && (
+                <motion.div key="error" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="px-6 py-4 rounded-2xl text-sm font-bold shadow-md mx-auto max-w-md w-full text-center"
+                  style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}>
+                  ⚠️ {error}
+                </motion.div>
+              )}
+            </AnimatePresence>
             <div ref={chatEndRef} />
           </div>
 
           {/* ── Input Area ── */}
           <div className="flex-shrink-0 px-3 sm:px-4 md:px-6 pt-3 pb-0 safe-bottom relative" style={{ zIndex: 20 }}>
             <div className="relative z-10 max-w-4xl mx-auto">
-              {voiceHint && (
-                <div className="max-w-max mx-auto mb-3 px-6 py-2 rounded-full text-xs font-bold text-center anim-fade-in shadow-md flex items-center gap-2"
-                  style={{
-                    background: isListening ? 'rgba(239,68,68,0.12)' : 'rgba(59,130,246,0.12)',
-                    color: isListening ? '#ef4444' : '#3b82f6',
-                    border: `1px solid ${isListening ? 'rgba(239,68,68,0.3)' : 'rgba(59,130,246,0.3)'}`,
-                  }}>
-                  <span style={{ animation: 'kPulse 1.5s ease-in-out infinite' }}>{isListening ? '🔴' : '✅'}</span>
-                  {voiceHint}
-                </div>
-              )}
+              <AnimatePresence>
+                {voiceHint && (
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="max-w-max mx-auto mb-3 px-6 py-2 rounded-full text-xs font-bold text-center shadow-md flex items-center gap-2"
+                    style={{
+                      background: isListening ? 'rgba(239,68,68,0.12)' : 'rgba(59,130,246,0.12)',
+                      color: isListening ? '#ef4444' : '#3b82f6',
+                      border: `1px solid ${isListening ? 'rgba(239,68,68,0.3)' : 'rgba(59,130,246,0.3)'}`,
+                    }}>
+                    <motion.span animate={isListening ? { opacity: [1, 0.4, 1] } : {}} transition={isListening ? { duration: 1.5, repeat: Infinity } : {}}>{isListening ? '🔴' : '✅'}</motion.span>
+                    {voiceHint}
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {input.length > 40 && (
-                <div className="flex justify-end mb-1 px-2 anim-fade-in">
+                <div className="flex justify-end mb-1 px-2">
                   <span className="text-xs font-bold tabular-nums" style={{ color: input.length > 280 ? '#ef4444' : 'var(--text-faint)' }}>
                     {input.length}<span className="opacity-40">/300</span>
                   </span>
@@ -1937,7 +1943,7 @@ export default function CurhatPage() {
                   <button onClick={() => { const cycle = [null, 'hujan', 'api', 'alam'] as const; const idx = cycle.indexOf(ambient as any); handlePlayAmbient(cycle[(idx + 1) % cycle.length]) }}
                     className="relative flex-shrink-0 flex items-center justify-center text-lg transition-all duration-300 hover:scale-105 active:scale-95"
                     style={{ width: 44, height: 44, borderRadius: '50%', background: ambient ? '#3b82f6' : 'var(--surface-2)', color: ambient ? 'white' : 'var(--text-faint)' }}>
-                    {ambient && <span className="absolute inset-0 rounded-full" style={{ background: 'rgba(59,130,246,0.3)', animation: 'kPulse 2.5s ease-in-out infinite' }} />}
+                    {ambient && <motion.span className="absolute inset-0 rounded-full" style={{ background: 'rgba(59,130,246,0.3)' }} animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0, 0.5] }} transition={{ duration: 2.5, repeat: Infinity }} />}
                     <span className="relative">{ambient === 'hujan' ? '🌧️' : ambient === 'api' ? '🔥' : ambient === 'alam' ? '🍃' : '🎵'}</span>
                   </button>
                 </div>
@@ -1948,23 +1954,26 @@ export default function CurhatPage() {
                   rows={1} value={input} onChange={handleInputChange} onKeyDown={handleKeyDown} disabled={loading} />
 
                 <div className="pb-1 pr-1 flex-shrink-0">
-                  <button onClick={handleSubmit} disabled={loading || !input.replace(/\s*\[.*?\]$/, '').trim()}
-                    className="flex items-center justify-center text-lg text-white transition-all duration-300 disabled:opacity-40 hover:scale-105 active:scale-95"
+                  <motion.button onClick={handleSubmit} disabled={loading || !input.replace(/\s*\[.*?\]$/, '').trim()}
+                    whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                    className="flex items-center justify-center text-lg text-white disabled:opacity-40"
                     style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg,#3b82f6,#6366f1)', boxShadow: '0 4px 14px rgba(59,130,246,0.4)' }}>
-                    {loading ? <span style={{ animation: 'kPulse 1.5s ease-in-out infinite' }}>✨</span> : <span style={{ marginLeft: 2 }}>🚀</span>}
-                  </button>
+                    {loading ? <motion.span animate={{ opacity: [1, 0.5, 1] }} transition={{ duration: 1.5, repeat: Infinity }}>✨</motion.span> : <span style={{ marginLeft: 2 }}>🚀</span>}
+                  </motion.button>
                 </div>
               </div>
 
-              {ambient && (
-                <div className="flex items-center justify-center gap-2 mt-2 anim-fade-in">
-                  <div className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold" style={{ background: 'rgba(59,130,246,0.08)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.2)' }}>
-                    <span style={{ animation: 'kPulse 2s ease-in-out infinite' }}>♪</span>
-                    <span>{ambient === 'hujan' ? 'Hujan Sore' : ambient === 'api' ? 'Api Unggun' : 'Suara Alam'} diputar</span>
-                    <button onClick={() => handlePlayAmbient(null)} className="ml-1 opacity-60 hover:opacity-100 font-bold" style={{ transition: 'opacity 0.2s' }}>✕</button>
-                  </div>
-                </div>
-              )}
+              <AnimatePresence>
+                {ambient && (
+                  <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex items-center justify-center gap-2 mt-2">
+                    <div className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold" style={{ background: 'rgba(59,130,246,0.08)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.2)' }}>
+                      <motion.span animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 2, repeat: Infinity }}>♪</motion.span>
+                      <span>{ambient === 'hujan' ? 'Hujan Sore' : ambient === 'api' ? 'Api Unggun' : 'Suara Alam'} diputar</span>
+                      <button onClick={() => handlePlayAmbient(null)} className="ml-1 opacity-60 hover:opacity-100 font-bold" style={{ transition: 'opacity 0.2s' }}>✕</button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               <p className="text-center text-xs font-semibold mt-2 pb-1 tracking-wide opacity-40 flex items-center justify-center gap-1.5" style={{ color: 'var(--text-faint)' }}>
                 🔒 Privasi 100% aman · Kenopia tidak menyimpan atau membagikan datamu
