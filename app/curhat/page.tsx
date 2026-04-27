@@ -1109,12 +1109,21 @@ export default function CurhatPage() {
   }
 
   const fetchInsight = async () => {
-    if (allMessages.length === 0) return
+    if (allMessages.length === 0) {
+      setInsightData('Belum ada riwayat curhat. Yuk, mulai cerita dulu!')
+      return
+    }
     setLoadingInsight(true)
+    setInsightData(null)
     try {
       const res = await fetch('/api/insight', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ history: allMessages.slice(-10), userName }) })
-      const data = await res.json(); setInsightData(data.insight)
-    } catch { setInsightData('Gagal menarik analisis AI.') }
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `Server error ${res.status}`)
+      setInsightData(data.insight || 'Maaf, tidak ada insight yang bisa ditampilkan saat ini.')
+    } catch (err: any) {
+      console.error('[fetchInsight] Error:', err)
+      setInsightData(`⚠️ Gagal mengambil insight: ${err.message || 'Coba lagi nanti.'}`)
+    }
     setLoadingInsight(false)
   }
 
