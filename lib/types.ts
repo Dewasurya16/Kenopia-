@@ -72,10 +72,12 @@ export interface ChatMessage {
   emotion: EmotionKey
   aiResponse: string
   timestamp: string
+  suggestions?: string[] // 👈 TAMBAHAN: Menyimpan saran jawaban dari AI
 }
 
 export interface AnalyzeResponse {
   emotion: EmotionKey
   aiResponse: string
+  suggestions: string[]  // 👈 TAMBAHAN: Menangkap JSON saran dari API
   timestamp: string
 }

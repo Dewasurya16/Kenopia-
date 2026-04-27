@@ -7,24 +7,30 @@ export async function POST(request: NextRequest) {
   try {
     const { history, userName = 'Teman' } = await request.json()
     
-    if (!history || history.length === 0) {
-      return NextResponse.json({ insight: "Belum ada riwayat curhat yang cukup untuk dianalisis. Yuk, mulai cerita!" })
+    if (!history || history.length < 3) {
+      return NextResponse.json({ 
+        error: "Surat ini butuh setidaknya 3 sesi curhat agar lebih personal. Yuk, cerita lebih banyak dulu!" 
+      }, { status: 400 })
     }
 
-    // PROMPT BARU: Lebih deep, natural, dan fokus ke "Akar Masalah" (Insight)
-    const prompt = `Kamu adalah Kenopia, AI dengan kecerdasan emosional tinggi. Pengguna yang sedang kamu analisis bernama ${userName}.
+    // PROMPT KHUSUS: Persona "Masa Depan", Hangat, Menenangkan, Puitis
+    const prompt = `Kamu sekarang BUKAN Kenopia. Kamu adalah versi masa depan dari ${userName}, tepatnya 5 tahun dari sekarang. Kamu menulis surat ini untuk dirimu di masa lalu.
 
-Berikut adalah jejak riwayat curhatnya belakangan ini:
-${history.map((h: any) => `- Emosi terdeteksi: ${h.emotion} | Teks: "${h.userMessage}"`).join('\n')}
+Berikut adalah apa yang sedang dirasakan dan dialami oleh dirimu di masa lalu saat ini:
+${history.map((h: any) => `- Emosi: ${h.emotion} | Teks: "${h.userMessage}"`).join('\n')}
 
-INSTRUKSI ANALISIS (WAJIB DIPATUHI MUTLAK):
-1. BACA BENANG MERAH: Jangan sekadar mengulang apa yang dia ketik. Analisis pola tersembunyinya. Apakah dia sedang lelah rutinitas, overthinking, merasa kesepian, atau sedang bersemangat?
-2. GAYA BAHASA NATURAL: Gunakan bahasa Indonesia sehari-hari yang santai, hangat, dan asik (gunakan aku/kamu). Jangan kaku, jangan gunakan penomoran/bullet point.
-3. STRUKTUR MENGALIR: Jangan kaku membagi jadi "Paragraf 1" dan "Paragraf 2". Rangkai kata-katamu dengan luwes.
-4. KONTEN: Validasi perasaannya secara mendalam (bikin dia merasa "Wah, Kenopia ngerti banget"). Lalu, berikan 1 perspektif baru atau saran psikologis ringan yang *mind-blowing* tapi praktis.
-5. NO AI-ISMS: Dilarang keras memakai awalan "Berdasarkan riwayat," "Sebagai AI," atau "Saya melihat pola." Langsung menyapa dan ngobrol layaknya membaca isi hatinya.
+INSTRUKSI MENULIS SURAT (WAJIB DIPATUHI MUTLAK):
+1. SUDUT PANDANG: Gunakan sudut pandang orang pertama ("Aku" untuk masa depan, "Kamu" untuk masa lalu).
+2. TONE & GAYA BAHASA: Sangat hangat, suportif, sedikit puitis tapi tidak lebay (cringy). Gunakan bahasa Indonesia sehari-hari yang luwes.
+3. KONTEN UTAMA: 
+   - Sapa dia dengan penuh kasih sayang.
+   - Akui bahwa kamu tahu persis seberapa berat beban yang sedang dia rasakan sekarang (sebutkan konteks masalahnya secara spesifik tapi halus).
+   - Yakinkan dia bahwa di masa depan (tempatmu berada sekarang), semuanya baik-baik saja. Beri tahu dia bahwa keputusan-keputusannya, sekecil apapun, membawamu ke tempat yang indah ini.
+   - Berikan kalimat penutup yang menguatkan (misal: "Teruslah melangkah, aku menunggumu di sini dengan bangga").
+4. FORMAT: Mengalir seperti surat nyata. Jangan pakai bullet point, penomoran, atau format kaku.
+5. NO AI-ISMS: Dilarang menyebutkan kata "AI", "Bot", atau "Berdasarkan riwayat". Jadilah manusia sungguhan.
 
-Panjang: Sekitar 100-150 kata. Bikin se-natural mungkin.`
+Panjang surat: Sekitar 150 - 250 kata.`
 
     const apiKey = process.env.GROQ_API_KEY
     if (!apiKey) {
@@ -41,8 +47,8 @@ Panjang: Sekitar 100-150 kata. Bikin se-natural mungkin.`
       body: JSON.stringify({
         model: GROQ_MODEL,
         messages: [{ role: 'system', content: prompt }],
-        max_tokens: 300,
-        temperature: 0.75, // Naikkan sedikit agar bahasanya lebih luwes dan empatik
+        max_tokens: 400,
+        temperature: 0.8, // Sedikit lebih tinggi agar imajinasinya lebih kaya & puitis
       }),
     })
 
@@ -51,11 +57,11 @@ Panjang: Sekitar 100-150 kata. Bikin se-natural mungkin.`
     }
 
     const data = await res.json()
-    const insightText = data.choices?.[0]?.message?.content?.trim() || "Maaf, pikiranku sedang agak penuh. Coba lagi nanti ya."
+    const letterText = data.choices?.[0]?.message?.content?.trim() || "Maaf, mesin waktu sedang bermasalah. Coba tulis ulang suratnya nanti ya."
 
-    return NextResponse.json({ insight: insightText })
+    return NextResponse.json({ letter: letterText })
   } catch (err) {
-    console.error('[/api/insight] Error:', err)
-    return NextResponse.json({ error: 'Gagal memproses insight.' }, { status: 500 })
+    console.error('[/api/futureself] Error:', err)
+    return NextResponse.json({ error: 'Gagal mengirim surat dari masa depan.' }, { status: 500 })
   }
 }

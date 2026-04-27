@@ -54,14 +54,6 @@ const REFLECTIONS = [
   "Jika kamu bisa memeluk masa lalumu, apa yang akan kamu katakan padanya?",
 ]
 
-const QUICK_REPLIES: Record<EmotionKey, string[]> = {
-  senang: ['Ceritakan lebih lanjut! 😄', 'Apa yang paling membuatku bahagia?', 'Bagaimana cara menjaga mood ini?'],
-  cinta: ['Siapa yang membuatku merasa spesial?', 'Bagaimana cara mengungkapkan perasaan ini?', 'Aku ingin cerita lebih banyak 💕'],
-  marah: ['Apa yang paling membuatku kesal?', 'Bagaimana cara terbaik menghadapinya?', 'Aku butuh cara melepas amarah ini'],
-  takut: ['Apa yang paling aku takutkan?', 'Bagaimana cara menghadapi ketakutan ini?', 'Bantu aku berpikir lebih jernih'],
-  sedih: ['Aku butuh semangat hari ini 🤍', 'Bantu aku menemukan hal positif', 'Aku ingin cerita lebih banyak'],
-}
-
 type BgTheme = 'default' | 'senja' | 'aurora' | 'sakura' | 'kosmos'
 const BG_THEMES: Record<BgTheme, { label: string; icon: string; lightBg: string; darkBg: string; orb1: string; orb2: string; orb3: string }> = {
   default: { label: 'Default', icon: '✨', lightBg: '#f8faff', darkBg: '#030308', orb1: 'rgba(59,130,246,0.15)', orb2: 'rgba(14,165,233,0.15)', orb3: 'rgba(236,72,153,0.15)' },
@@ -147,22 +139,85 @@ function PendingUserBubble({ text }: { text: string }) {
 function MessageBubble({ msg }: { msg: ChatMessage }) {
   const timeStr = new Date(msg.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
   const [isPlaying, setIsPlaying] = useState(false)
+  const [feedback, setFeedback] = useState<'up' | 'down' | null>(null) // <-- State buat nangkep klik jempol
+  const [isSubmitting, setIsSubmitting] = useState(false) // <-- State untuk mencegah spam klik
 
-  const handleSpeak = () => {
-    if (!('speechSynthesis' in window)) return
-    if (isPlaying) { window.speechSynthesis.cancel(); setIsPlaying(false); return }
+ const handleSpeak = () => {
+    if (!('speechSynthesis' in window)) {
+      alert("Browser kamu belum mendukung fitur suara ini.")
+      return
+    }
+
+    if (isPlaying) { 
+      window.speechSynthesis.cancel()
+      setIsPlaying(false)
+      return 
+    }
+
     window.speechSynthesis.cancel()
+
+    // Bersihkan teks dari emoji dan simbol markdown biar bacanya mulus
     const cleanText = msg.aiResponse
       .replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '')
-      .replace(/[*_~`#]/g, '').trim()
+      .replace(/[*_~`#]/g, '')
+      .trim()
+
     const utterance = new SpeechSynthesisUtterance(cleanText)
-    utterance.lang = 'id-ID'; utterance.rate = 0.95; utterance.pitch = 1.0
+    utterance.lang = 'id-ID' // Paksa pakai bahasa Indonesia
+    utterance.rate = 0.95 // Agak dipelankan dikit biar nggak kayak nge-rap
+    utterance.pitch = 1.0
+
+    // Ambil daftar suara dari browser
     const voices = window.speechSynthesis.getVoices()
-    const idVoice = voices.find(v => v.lang.includes('id') || v.lang.includes('ID'))
-    if (idVoice) utterance.voice = idVoice
+    
+    // Cari suara Indonesia dengan pencarian yang lebih agresif
+    const idVoice = voices.find(v => 
+      v.lang === 'id-ID' || 
+      v.lang === 'id_ID' || 
+      v.lang === 'id' ||
+      v.name.toLowerCase().includes('indonesia') ||
+      v.name.toLowerCase().includes('damayanti') || // Suara mac OS
+      v.name.toLowerCase().includes('gadis') // Suara mac OS lainnya
+    )
+
+    // Kalau ketemu, langsung pakai suara itu
+    if (idVoice) {
+      utterance.voice = idVoice
+    }
+
     utterance.onend = () => setIsPlaying(false)
-    utterance.onerror = () => setIsPlaying(false)
-    setIsPlaying(true); window.speechSynthesis.speak(utterance)
+    utterance.onerror = (e) => {
+      console.error("Error suara:", e)
+      setIsPlaying(false)
+    }
+
+    setIsPlaying(true)
+    window.speechSynthesis.speak(utterance)
+  }
+  // ── FUNGSI BARU: Mengirim data jempol ke backend ──
+  const handleFeedback = async (type: 'up' | 'down') => {
+    if (feedback === type || isSubmitting) return // Biar nggak diklik dobel
+    setFeedback(type)
+    setIsSubmitting(true)
+
+    try {
+      await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messageId: msg.id,
+          userMessage: msg.userMessage,
+          aiResponse: msg.aiResponse,
+          feedback: type,
+          timestamp: new Date().toISOString()
+        })
+      })
+    } catch (error) {
+      console.error("Gagal mengirim feedback", error)
+      setFeedback(null) // Reset tampilannya kalau gagal ngirim
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -189,6 +244,8 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
             <div className="px-5 sm:px-6 py-3.5 sm:py-4 text-sm leading-relaxed whitespace-pre-wrap bubble-ai pr-10 sm:pr-12">
               {msg.aiResponse}
             </div>
+            
+            {/* Tombol Speaker */}
             <motion.button onClick={handleSpeak}
               whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
               animate={isPlaying ? { boxShadow: ['0 0 0px #3b82f6', '0 0 15px #3b82f6', '0 0 0px #3b82f6'] } : {}}
@@ -202,13 +259,39 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
               {isPlaying ? '⏹' : '🔊'}
             </motion.button>
           </div>
-          <p className="text-xs mt-1.5 ml-1 font-medium msg-time" style={{ color: 'var(--text-faint)' }}>{timeStr}</p>
+          
+          {/* Footer Bawah AI: Waktu & Tombol Jempol */}
+          <div className="flex items-center gap-3 mt-1.5 ml-1">
+            <p className="text-xs font-medium msg-time" style={{ color: 'var(--text-faint)' }}>{timeStr}</p>
+            
+            {/* UI Jempol Muncul Di Sini */}
+            <div className="flex items-center gap-1.5 opacity-0 transition-opacity duration-300 msg-time">
+              <button 
+                onClick={() => handleFeedback('up')}
+                disabled={isSubmitting}
+                className="text-xs transition-transform hover:scale-125 disabled:opacity-50"
+                style={{ filter: feedback === 'up' ? 'grayscale(0)' : 'grayscale(100%)', opacity: feedback === 'up' ? 1 : 0.6 }}
+                title="Suka jawaban ini"
+              >
+                👍
+              </button>
+              <button 
+                onClick={() => handleFeedback('down')}
+                disabled={isSubmitting}
+                className="text-xs transition-transform hover:scale-125 disabled:opacity-50"
+                style={{ filter: feedback === 'down' ? 'grayscale(0)' : 'grayscale(100%)', opacity: feedback === 'down' ? 1 : 0.6 }}
+                title="Jawaban kurang pas"
+              >
+                👎
+              </button>
+            </div>
+          </div>
+
         </div>
       </div>
     </motion.div>
   )
 }
-
 function HistoryItem({ session, active, onClick, onDelete }: { session: ChatSession; active: boolean; onClick: () => void; onDelete?: (e: React.MouseEvent) => void }) {
   const lastMsg = session.messages[session.messages.length - 1]
   const meta = lastMsg ? EMOTIONS[lastMsg.emotion] : EMOTIONS['sedih']
@@ -836,25 +919,6 @@ function StreakBadge({ count }: { count: number }) {
   )
 }
 
-function QuickReplies({ emotion, onSelect }: { emotion: EmotionKey; onSelect: (text: string) => void }) {
-  const replies = QUICK_REPLIES[emotion] || []
-  const meta = EMOTIONS[emotion]
-  return (
-    <div className="flex flex-wrap justify-center gap-2 my-4 px-2">
-      {replies.map((reply, i) => (
-        <motion.button key={reply} 
-          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-          whileHover={{ scale: 1.06, y: -1 }} whileTap={{ scale: 0.96 }}
-          onClick={() => onSelect(reply)}
-          className="px-4 py-2 rounded-full text-xs font-semibold shadow-sm"
-          style={{ background: `${meta.color}10`, color: meta.color, border: `1.5px solid ${meta.color}30`, backdropFilter: 'blur(12px)' }}>
-          {reply}
-        </motion.button>
-      ))}
-    </div>
-  )
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Main Page
 // ─────────────────────────────────────────────────────────────────────────────
@@ -994,7 +1058,6 @@ export default function CurhatPage() {
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  // ── Unregister stale service workers so users don't need to hard-refresh ──
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(regs => { regs.forEach(r => r.unregister()) })
@@ -1103,13 +1166,38 @@ export default function CurhatPage() {
     setInput(''); setError(null); setVoiceHint(null); setPendingText(text); setLoading(true)
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
     const recentContext = activeMessages.slice(-4).map(h => ({ user: h.userMessage, ai: h.aiResponse }))
+    
     try {
-      const res = await fetch('/api/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: text, context: recentContext, persona, userName }) })
+      // 1. Tambahkan data profil ke fetch API
+      const res = await fetch('/api/analyze', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ 
+          message: text, 
+          context: recentContext, 
+          persona, 
+          userName,
+          userGender: 'Netral', 
+          preferredPronoun: persona === 'sahabat' ? 'Gue-Lo' : 'Aku-Kamu',
+          focusArea: 'Kesehatan Mental & Pekerjaan'
+        }) 
+      })
+      
       const rawText = await res.text()
       let data: AnalyzeResponse
       try { data = JSON.parse(rawText) } catch { throw new Error('Respons server tidak valid. Coba lagi.') }
       if (!res.ok) throw new Error((data as { error?: string }).error || 'Terjadi kesalahan.')
-      const newMsg: ChatMessage = { id: uuidv4(), userMessage: text, emotion: data.emotion, aiResponse: data.aiResponse, timestamp: data.timestamp }
+      
+      // 2. Tangkap "suggestions" dari AI dan simpan
+      const newMsg: ChatMessage = { 
+        id: uuidv4(), 
+        userMessage: text, 
+        emotion: data.emotion, 
+        aiResponse: data.aiResponse, 
+        suggestions: data.suggestions || [], // Tangkap array JSON dari backend
+        timestamp: data.timestamp 
+      }
+      
       let updatedSessions = [...sessions]
       if (activeSessionId) {
         updatedSessions = updatedSessions.map(s => s.id === activeSessionId ? { ...s, messages: [...s.messages, newMsg] } : s)
@@ -1893,9 +1981,28 @@ export default function CurhatPage() {
               {activeMessages.map((msg, idx) => (
                 <motion.div key={msg.id} layout initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
                   <MessageBubble msg={msg} />
-                  {idx === activeMessages.length - 1 && !loading && !pendingText && (
-                    <QuickReplies emotion={msg.emotion} onSelect={text => { setInput(text); textareaRef.current?.focus() }} />
+                  
+                  {/* ── TOMBOL SARAN AI DINAMIS ── */}
+                  {idx === activeMessages.length - 1 && !loading && !pendingText && msg.suggestions && msg.suggestions.length > 0 && (
+                    <div className="flex flex-wrap justify-center gap-2 my-4 px-2">
+                      {msg.suggestions.map((sug, i) => (
+                        <motion.button key={i} 
+                          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
+                          whileHover={{ scale: 1.06, y: -1 }} whileTap={{ scale: 0.96 }}
+                          onClick={() => { setInput(sug); textareaRef.current?.focus() }}
+                          className="px-4 py-2 rounded-full text-xs font-semibold shadow-sm"
+                          style={{ 
+                            background: 'var(--surface)', 
+                            color: '#3b82f6', 
+                            border: '1.5px solid rgba(59,130,246,0.3)', 
+                            backdropFilter: 'blur(12px)' 
+                          }}>
+                          {sug}
+                        </motion.button>
+                      ))}
+                    </div>
                   )}
+                  
                 </motion.div>
               ))}
               {pendingText && <PendingUserBubble key="pending" text={pendingText} />}
