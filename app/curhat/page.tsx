@@ -7,6 +7,7 @@ import { ChatMessage, EMOTIONS, EmotionKey, AnalyzeResponse } from '@/lib/types'
 import { v4 as uuidv4 } from 'uuid'
 import html2canvas from 'html2canvas'
 import { motion, AnimatePresence } from 'framer-motion'
+import ReactMarkdown from 'react-markdown' // <-- IMPORT BARU
 
 const EmotionChart = dynamic(() => import('@/components/EmotionChart'), { ssr: false })
 
@@ -18,6 +19,24 @@ const STREAK_KEY = 'kenopia_streak_v1'
 const MOOD_KEY = 'kenopia_daily_mood'
 const THEME_KEY = 'kenopia_bg_theme'
 const CAPSULE_KEY = 'kenopia_time_capsules'
+
+// ── UTILITIES BARU ────────────────────────────────────────────────────────────
+
+// Haptic Feedback
+const triggerVibrate = (pattern: number | number[]) => {
+  if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+    navigator.vibrate(pattern)
+  }
+}
+
+// Sapaan Waktu Otomatis
+const getGreeting = () => {
+  const hour = new Date().getHours()
+  if (hour >= 5 && hour < 12) return 'Selamat Pagi'
+  if (hour >= 12 && hour < 15) return 'Selamat Siang'
+  if (hour >= 15 && hour < 18) return 'Selamat Sore'
+  return 'Selamat Malam'
+}
 
 // ── Daily Affirmations ────────────────────────────────────────────────────────
 const AFFIRMATIONS = [
@@ -127,7 +146,7 @@ function PendingUserBubble({ text }: { text: string }) {
             style={{ background: 'linear-gradient(135deg,#3b82f6,#6366f1)', color: 'white', borderRadius: '20px 20px 6px 20px' }}>
             {text}
           </div>
-          <p className="text-right text-xs mt-2 font-medium flex items-center justify-end gap-1" style={{ color: 'var(--text-faint)' }}>
+          <p className="text-right text-xs mt-2 font-medium flex items-center justify-end gap-1 text-red-500">
             <motion.span animate={{ opacity: [1, 0.4, 1] }} transition={{ duration: 1.5, repeat: Infinity }}>⏳</motion.span> Mengirim...
           </p>
         </div>
@@ -136,13 +155,16 @@ function PendingUserBubble({ text }: { text: string }) {
   )
 }
 
-function MessageBubble({ msg }: { msg: ChatMessage }) {
+function MessageBubble({ msg, userName, persona }: { msg: ChatMessage, userName: string, persona: string }) {
   const timeStr = new Date(msg.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
   const [isPlaying, setIsPlaying] = useState(false)
-  const [feedback, setFeedback] = useState<'up' | 'down' | null>(null) // <-- State buat nangkep klik jempol
-  const [isSubmitting, setIsSubmitting] = useState(false) // <-- State untuk mencegah spam klik
+  const [feedback, setFeedback] = useState<'up' | 'down' | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
- const handleSpeak = () => {
+  // ── Avatar Dinamis ──
+  const avatarIcon = persona === 'sahabat' ? '👋' : persona === 'psikolog' ? '🩺' : '🧘'
+
+  const handleSpeak = () => {
     if (!('speechSynthesis' in window)) {
       alert("Browser kamu belum mendukung fitur suara ini.")
       return
@@ -156,34 +178,23 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
 
     window.speechSynthesis.cancel()
 
-    // Bersihkan teks dari emoji dan simbol markdown biar bacanya mulus
     const cleanText = msg.aiResponse
       .replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '')
       .replace(/[*_~`#]/g, '')
       .trim()
 
     const utterance = new SpeechSynthesisUtterance(cleanText)
-    utterance.lang = 'id-ID' // Paksa pakai bahasa Indonesia
-    utterance.rate = 0.95 // Agak dipelankan dikit biar nggak kayak nge-rap
+    utterance.lang = 'id-ID'
+    utterance.rate = 0.95
     utterance.pitch = 1.0
 
-    // Ambil daftar suara dari browser
     const voices = window.speechSynthesis.getVoices()
-    
-    // Cari suara Indonesia dengan pencarian yang lebih agresif
     const idVoice = voices.find(v => 
-      v.lang === 'id-ID' || 
-      v.lang === 'id_ID' || 
-      v.lang === 'id' ||
-      v.name.toLowerCase().includes('indonesia') ||
-      v.name.toLowerCase().includes('damayanti') || // Suara mac OS
-      v.name.toLowerCase().includes('gadis') // Suara mac OS lainnya
+      v.lang === 'id-ID' || v.lang === 'id_ID' || v.lang === 'id' ||
+      v.name.toLowerCase().includes('indonesia') || v.name.toLowerCase().includes('damayanti') || v.name.toLowerCase().includes('gadis')
     )
 
-    // Kalau ketemu, langsung pakai suara itu
-    if (idVoice) {
-      utterance.voice = idVoice
-    }
+    if (idVoice) utterance.voice = idVoice
 
     utterance.onend = () => setIsPlaying(false)
     utterance.onerror = (e) => {
@@ -194,9 +205,10 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
     setIsPlaying(true)
     window.speechSynthesis.speak(utterance)
   }
-  // ── FUNGSI BARU: Mengirim data jempol ke backend ──
+  
   const handleFeedback = async (type: 'up' | 'down') => {
-    if (feedback === type || isSubmitting) return // Biar nggak diklik dobel
+    if (feedback === type || isSubmitting) return
+    triggerVibrate(15) // Haptic saat kasih jempol
     setFeedback(type)
     setIsSubmitting(true)
 
@@ -214,7 +226,7 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
       })
     } catch (error) {
       console.error("Gagal mengirim feedback", error)
-      setFeedback(null) // Reset tampilannya kalau gagal ngirim
+      setFeedback(null)
     } finally {
       setIsSubmitting(false)
     }
@@ -225,6 +237,9 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
       {/* User bubble */}
       <div className="flex justify-end">
         <div className="max-w-[85%] sm:max-w-[75%]">
+          <p className="text-right text-[11px] font-bold mb-1 pr-1" style={{ color: 'var(--text-faint)' }}>
+            {userName || 'Kamu'}
+          </p>
           <div className="px-5 sm:px-6 py-3.5 sm:py-4 text-sm leading-relaxed bubble-user font-medium">
             {msg.userMessage}
           </div>
@@ -238,14 +253,21 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
       {/* AI bubble */}
       <div className="flex items-end gap-2 sm:gap-3">
         <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-sm flex-shrink-0 font-bold text-white shadow-lg flex-none"
-          style={{ background: 'linear-gradient(135deg,#3b82f6,#ec4899)' }}>K</div>
+          style={{ background: 'linear-gradient(135deg,#3b82f6,#ec4899)' }}>
+          {avatarIcon}
+        </div>
         <div className="max-w-[85%] sm:max-w-[75%] flex-1 min-w-0">
+          
+          <p className="text-left text-[11px] font-bold mb-1 pl-1" style={{ color: '#3b82f6' }}>
+            Kenopia <span style={{ opacity: 0.6, fontSize: '10px' }}>• {persona === 'psikolog' ? 'Psikolog' : persona === 'filsuf' ? 'Filsuf Zen' : 'Sahabat'}</span>
+          </p>
+
           <div className="relative">
-            <div className="px-5 sm:px-6 py-3.5 sm:py-4 text-sm leading-relaxed whitespace-pre-wrap bubble-ai pr-10 sm:pr-12">
-              {msg.aiResponse}
+            {/* ── React Markdown Render ── */}
+            <div className="px-5 sm:px-6 py-3.5 sm:py-4 text-sm leading-relaxed bubble-ai pr-10 sm:pr-12 markdown-body">
+              <ReactMarkdown>{msg.aiResponse}</ReactMarkdown>
             </div>
             
-            {/* Tombol Speaker */}
             <motion.button onClick={handleSpeak}
               whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
               animate={isPlaying ? { boxShadow: ['0 0 0px #3b82f6', '0 0 15px #3b82f6', '0 0 0px #3b82f6'] } : {}}
@@ -260,30 +282,17 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
             </motion.button>
           </div>
           
-          {/* Footer Bawah AI: Waktu & Tombol Jempol */}
           <div className="flex items-center gap-3 mt-1.5 ml-1">
             <p className="text-xs font-medium msg-time" style={{ color: 'var(--text-faint)' }}>{timeStr}</p>
-            
-            {/* UI Jempol Muncul Di Sini */}
             <div className="flex items-center gap-1.5 opacity-0 transition-opacity duration-300 msg-time">
-              <button 
-                onClick={() => handleFeedback('up')}
-                disabled={isSubmitting}
+              <button onClick={() => handleFeedback('up')} disabled={isSubmitting}
                 className="text-xs transition-transform hover:scale-125 disabled:opacity-50"
                 style={{ filter: feedback === 'up' ? 'grayscale(0)' : 'grayscale(100%)', opacity: feedback === 'up' ? 1 : 0.6 }}
-                title="Suka jawaban ini"
-              >
-                👍
-              </button>
-              <button 
-                onClick={() => handleFeedback('down')}
-                disabled={isSubmitting}
+                title="Suka jawaban ini">👍</button>
+              <button onClick={() => handleFeedback('down')} disabled={isSubmitting}
                 className="text-xs transition-transform hover:scale-125 disabled:opacity-50"
                 style={{ filter: feedback === 'down' ? 'grayscale(0)' : 'grayscale(100%)', opacity: feedback === 'down' ? 1 : 0.6 }}
-                title="Jawaban kurang pas"
-              >
-                👎
-              </button>
+                title="Jawaban kurang pas">👎</button>
             </div>
           </div>
 
@@ -693,7 +702,11 @@ function BubbleWrapOverlay({ onClose }: { onClose: () => void }) {
         <p className="text-xs mb-8 text-center leading-relaxed" style={{ color: 'rgba(255,255,255,0.55)' }}>Fokuskan pikiranmu pada setiap letusan kecil ini untuk meredakan kecemasan.</p>
         <div className="grid grid-cols-6 gap-3 mb-8">
           {bubbles.map((popped, i) => (
-            <button key={i} onClick={() => { if (popped) return; const b = [...bubbles]; b[i] = true; setBubbles(b) }}
+            <button key={i} onClick={() => { 
+                if (popped) return; 
+                triggerVibrate(15); // Haptic ketika meletus!
+                const b = [...bubbles]; b[i] = true; setBubbles(b) 
+              }}
               className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200"
               style={{
                 background: popped ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.28)',
@@ -820,10 +833,23 @@ function MicButton({ isListening, onClick, disabled }: { isListening: boolean; o
       whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
       animate={isListening ? { boxShadow: ['0 0 0px #ef4444', '0 6px 20px rgba(239,68,68,0.6)', '0 0 0px #ef4444'] } : {}}
       transition={isListening ? { duration: 1.5, repeat: Infinity } : {}}
-      className="relative flex-shrink-0 flex items-center justify-center disabled:opacity-50"
+      className="relative flex-shrink-0 flex items-center justify-center disabled:opacity-50 overflow-hidden"
       style={{ width: 44, height: 44, borderRadius: '50%', background: isListening ? '#ef4444' : 'var(--surface-2)', color: isListening ? 'white' : 'var(--text-faint)' }}
       aria-label={isListening ? 'Hentikan rekaman' : 'Bicara'}>
-      <span className="text-lg">{isListening ? '⏹' : '🎤'}</span>
+      
+      {/* ── Visualizer Suara Dinamis ── */}
+      {isListening ? (
+        <div className="flex items-center justify-center gap-[3px] h-full">
+          {[0, 1, 2, 3].map(i => (
+            <motion.div key={i} className="w-[3px] bg-white rounded-full"
+              animate={{ height: ['8px', '22px', '8px'] }}
+              transition={{ repeat: Infinity, duration: 0.6, delay: i * 0.15, ease: "easeInOut" }}
+            />
+          ))}
+        </div>
+      ) : (
+        <span className="text-lg">🎤</span>
+      )}
     </motion.button>
   )
 }
@@ -1128,6 +1154,7 @@ export default function CurhatPage() {
   }
 
   const handleDrawPromptCard = () => {
+    triggerVibrate(20) // Haptic feedback saat ambil kartu
     const randomPrompt = REFLECTIONS[Math.floor(Math.random() * REFLECTIONS.length)]
     setInput(randomPrompt); textareaRef.current?.focus()
   }
@@ -1172,12 +1199,14 @@ export default function CurhatPage() {
     if (isListening) { recognitionRef.current?.stop(); setIsListening(false) }
     const text = input.replace(/\s*\[.*?\]$/, '').trim()
     if (!text || loading) return
+    
+    triggerVibrate(30) // Haptic feedback saat mengirim pesan
+
     setInput(''); setError(null); setVoiceHint(null); setPendingText(text); setLoading(true)
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
     const recentContext = activeMessages.slice(-4).map(h => ({ user: h.userMessage, ai: h.aiResponse }))
     
     try {
-      // 1. Tambahkan data profil ke fetch API
       const res = await fetch('/api/analyze', { 
         method: 'POST', 
         headers: { 'Content-Type': 'application/json' }, 
@@ -1197,13 +1226,12 @@ export default function CurhatPage() {
       try { data = JSON.parse(rawText) } catch { throw new Error('Respons server tidak valid. Coba lagi.') }
       if (!res.ok) throw new Error((data as { error?: string }).error || 'Terjadi kesalahan.')
       
-      // 2. Tangkap "suggestions" dari AI dan simpan
       const newMsg: ChatMessage = { 
         id: uuidv4(), 
         userMessage: text, 
         emotion: data.emotion, 
         aiResponse: data.aiResponse, 
-        suggestions: data.suggestions || [], // Tangkap array JSON dari backend
+        suggestions: data.suggestions || [],
         timestamp: data.timestamp 
       }
       
@@ -1232,12 +1260,10 @@ export default function CurhatPage() {
 
   if (!mounted) return null
 
-  // ── CSS variable values based on dark mode ─────────────────────────────────
   const cssVars = dark
     ? { '--bg': '#030308', '--surface': 'rgba(255,255,255,0.05)', '--surface-2': 'rgba(255,255,255,0.07)', '--border-2': 'rgba(255,255,255,0.1)', '--text': '#eef0ff', '--text-muted': 'rgba(238,240,255,0.65)', '--text-faint': 'rgba(238,240,255,0.38)', '--accent': '#3b82f6' }
     : { '--bg': '#f8faff', '--surface': 'rgba(255,255,255,0.9)', '--surface-2': 'rgba(248,250,255,0.85)', '--border-2': 'rgba(0,0,0,0.08)', '--text': '#0d1117', '--text-muted': 'rgba(13,17,23,0.65)', '--text-faint': 'rgba(13,17,23,0.4)', '--accent': '#3b82f6' }
 
-  // ── Onboarding Name Modal ──────────────────────────────────────────────────
   if (showNameModal && !isLocked) {
     return (
       <div className="flex h-[100dvh] w-full items-center justify-center flex-col relative overflow-hidden" style={{ background: '#030308', ...cssVars as React.CSSProperties }}>
@@ -1261,7 +1287,6 @@ export default function CurhatPage() {
     )
   }
 
-  // ── Lock Screen ────────────────────────────────────────────────────────────
   if (isLocked) {
     return (
       <div className="flex h-[100dvh] w-full items-center justify-center flex-col relative overflow-hidden" style={{ background: '#030308', ...cssVars as React.CSSProperties }}>
@@ -1301,7 +1326,6 @@ export default function CurhatPage() {
   const currentTheme = BG_THEMES[bgTheme]
   const mainBgColor = dark ? currentTheme.darkBg : currentTheme.lightBg
 
-  // ── Shared overlay open state for sidebar/mobile buttons ──────────────────
   const openOverlay = (fn: () => void) => { fn(); setSidebarOpen(false); setShowMobileMenu(false) }
 
   return (
@@ -1318,53 +1342,32 @@ export default function CurhatPage() {
         .font-serif { font-family: 'Lora', Georgia, serif !important; }
 
         /* ── Prevent Mobile Body Scroll (Fix Navbar/Input Jump) ── */
-        html, body {
-          height: 100%;
-          overflow: hidden;
-          overscroll-behavior-y: none;
-          touch-action: pan-x pan-y;
-        }
+        html, body { height: 100%; overflow: hidden; overscroll-behavior-y: none; touch-action: pan-x pan-y; }
 
-        /* ── Base ── */
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(156,163,175,0.25); border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(156,163,175,0.45); }
 
-        /* ── Optimize Background Blur for Mobile ── */
         .bg-orb { will-change: transform; transform: translateZ(0); }
-
-        /* ── Message timestamps ── */
         .msg-group .msg-time { opacity: 0; transition: opacity 0.25s; }
         .msg-group:hover .msg-time { opacity: 1; }
         @media (hover: none) { .msg-group .msg-time { opacity: 0.55; } }
-
-        /* ── History delete button ── */
         .hist-group .hist-delete { opacity: 0; transition: opacity 0.2s; }
         .hist-group:hover .hist-delete { opacity: 1; }
         @media (hover: none) { .hist-group .hist-delete { opacity: 0.7; } }
 
-        /* ── Prevent iOS zoom on input focus ── */
         textarea, input, select { font-size: 16px !important; }
         button, a { touch-action: manipulation; }
-
-        /* ── Textarea no-scrollbar ── */
         .chat-input { -ms-overflow-style:none; scrollbar-width:none; }
         .chat-input::-webkit-scrollbar { display:none; }
-
-        /* ── Rounded corners shorthand ── */
         .rounded-3xl { border-radius: 24px; }
         .rounded-4xl { border-radius: 32px; }
-
-        /* ── z-index layers ── */
         .z-85  { z-index: 85; }
         .z-100 { z-index: 100; }
-
-        /* ── iPhone safe area insets ── */
         .safe-top    { padding-top: max(12px, env(safe-area-inset-top)); }
         .safe-bottom { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
 
-        /* ── Message bubble polish ── */
         .bubble-user {
           background: linear-gradient(135deg, #3b82f6, #6366f1);
           color: white;
@@ -1379,19 +1382,18 @@ export default function CurhatPage() {
           box-shadow: 0 2px 12px rgba(0,0,0,0.05);
         }
 
-        /* ── Input area glass ── */
-        .input-glass {
-          backdrop-filter: blur(28px);
-          -webkit-backdrop-filter: blur(28px);
-          transition: box-shadow 0.3s;
-        }
-        .input-glass:focus-within {
-          box-shadow: 0 0 0 2px rgba(59,130,246,0.22), 0 12px 48px rgba(0,0,0,0.08) !important;
-        }
-
-        /* ── Better focus rings ── */
+        .input-glass { backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px); transition: box-shadow 0.3s; }
+        .input-glass:focus-within { box-shadow: 0 0 0 2px rgba(59,130,246,0.22), 0 12px 48px rgba(0,0,0,0.08) !important; }
         button:focus-visible { outline: 2px solid rgba(59,130,246,0.6); outline-offset: 2px; }
         textarea:focus-visible, input:focus-visible { outline: none; }
+
+        /* ── Styling Tambahan untuk React Markdown ── */
+        .markdown-body p { margin-bottom: 0.75em; }
+        .markdown-body p:last-child { margin-bottom: 0; }
+        .markdown-body strong { font-weight: 700; color: inherit; }
+        .markdown-body ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 0.75em; }
+        .markdown-body ol { list-style-type: decimal; padding-left: 1.5em; margin-bottom: 0.75em; }
+        .markdown-body li { margin-bottom: 0.25em; }
       `}</style>
 
       <div className="kp-app flex h-[100dvh] w-full overflow-hidden relative transition-colors duration-1000" style={{ background: mainBgColor } as React.CSSProperties}>
@@ -1411,11 +1413,7 @@ export default function CurhatPage() {
                 rotate: [0, 5, -5, 0]
               }}
               transition={{ duration: 15 + i * 2, repeat: Infinity, ease: "linear" }}
-              style={{
-                width: orb.size, height: orb.size, background: orb.bg,
-                filter: 'blur(100px)',
-                ...orb.pos
-              }} />
+              style={{ width: orb.size, height: orb.size, background: orb.bg, filter: 'blur(100px)', ...orb.pos }} />
           ))}
         </div>
 
@@ -1604,7 +1602,6 @@ export default function CurhatPage() {
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 sm:px-5 pb-4">
-              {/* 9-feature grid sidebar */}
               <div className="grid grid-cols-3 gap-2 mb-5">
                 {[
                   { icon: '🧘', label: 'Grounding', fn: () => openOverlay(() => setShowGrounding(true)), color: '#10b981' },
@@ -1627,7 +1624,6 @@ export default function CurhatPage() {
                 ))}
               </div>
 
-              {/* Stats section */}
               <button onClick={() => setShowStats(!showStats)}
                 className="w-full mb-3 py-3 px-5 rounded-2xl text-sm font-bold flex items-center justify-between transition-all shadow-sm"
                 style={{ background: 'var(--surface-2)', border: '1px solid var(--border-2)', color: 'var(--text-muted)' }}>
@@ -1654,7 +1650,6 @@ export default function CurhatPage() {
                 )}
               </AnimatePresence>
 
-              {/* History list */}
               <div className="py-2">
                 <div className="flex justify-between items-center mb-3 px-1">
                   <p className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--text-faint)' }}>Riwayat ({sessions.length})</p>
@@ -1685,7 +1680,6 @@ export default function CurhatPage() {
               </div>
             </div>
 
-            {/* Sidebar footer */}
             <div className="p-4 sm:p-5 flex flex-col gap-2.5" style={{ borderTop: '1px solid var(--border-2)' }}>
               <div className="flex gap-2.5">
                 <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setShowPinSetup(true)} className="flex-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2"
@@ -1710,7 +1704,6 @@ export default function CurhatPage() {
         {/* ── MAIN CHAT AREA ── */}
         <main className="flex-1 flex flex-col min-w-0 h-full relative" style={{ zIndex: 10 }}>
 
-          {/* ── Header ── */}
           {!zenMode && (
             <header className="flex items-center justify-between px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 flex-shrink-0 safe-top"
               style={{ background: dark ? 'rgba(9,5,30,0.6)' : 'rgba(255,255,255,0.7)', backdropFilter: 'blur(28px)', WebkitBackdropFilter: 'blur(28px)', borderBottom: '1px solid var(--border-2)', zIndex: 30, position: 'relative' }}>
@@ -1727,7 +1720,8 @@ export default function CurhatPage() {
                       : activeSessionId ? <>{EMOTIONS[activeMessages[activeMessages.length - 1]?.emotion ?? 'sedih'].emoji} Sesi Tersimpan</> : <>💬 Kenopia AI</>}
                   </p>
                   <p className="text-xs leading-tight mt-0.5 flex items-center gap-1.5 truncate" style={{ color: 'var(--text-faint)' }}>
-                    Halo <span className="font-bold" style={{ color: '#3b82f6' }}>{userName || 'Teman'}</span>
+                    {/* ── Sapaan Waktu Otomatis ── */}
+                    {getGreeting()}, <span className="font-bold" style={{ color: '#3b82f6' }}>{userName || 'Teman'}</span>
                     <span className="opacity-30 hidden sm:inline">·</span>
                     <span className="hidden sm:inline">{persona === 'sahabat' ? '👋 Sahabat' : persona === 'psikolog' ? '🩺 Psikolog' : '🧘 Filsuf'}</span>
                   </p>
@@ -1738,7 +1732,6 @@ export default function CurhatPage() {
               <div className="hidden md:flex items-center gap-2 flex-shrink-0 ml-3">
                 {streakCount >= 2 && <StreakBadge count={streakCount} />}
 
-                {/* Persona dropdown */}
                 <div className="relative" ref={personaDDRef}>
                   <motion.button whileHover={{ scale: 1.05 }} className="px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 shadow-sm"
                     style={{ background: 'var(--surface-2)', border: '1px solid var(--border-2)', color: 'var(--text-muted)' }}
@@ -1765,7 +1758,6 @@ export default function CurhatPage() {
                   </AnimatePresence>
                 </div>
 
-                {/* Ambient dropdown */}
                 <div className="relative" ref={ambientDDRef}>
                   <motion.button whileHover={{ scale: 1.05 }} className="px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 shadow-sm"
                     style={{ background: ambient ? '#3b82f6' : 'var(--surface-2)', border: `1px solid ${ambient ? 'transparent' : 'var(--border-2)'}`, color: ambient ? 'white' : 'var(--text-muted)' }}
@@ -1796,7 +1788,6 @@ export default function CurhatPage() {
                   </AnimatePresence>
                 </div>
 
-                {/* Theme picker */}
                 <div className="relative" ref={themeDDRef}>
                   <motion.button whileHover={{ scale: 1.05 }} className="w-9 h-9 rounded-full flex items-center justify-center text-base"
                     style={{ background: 'var(--surface-2)', border: '1px solid var(--border-2)' }}
@@ -1831,7 +1822,6 @@ export default function CurhatPage() {
               <div className="flex md:hidden items-center gap-1 flex-shrink-0 ml-auto">
                 {streakCount >= 2 && <StreakBadge count={streakCount} />}
 
-                {/* Persona dropdown (mobile) */}
                 <div className="relative">
                   <button onClick={() => { setShowPersonaDD(v => !v); setShowAmbientDD(false); setShowThemeDD(false) }}
                     className="h-8 px-2.5 rounded-xl flex items-center gap-1 text-xs font-bold transition-all active:scale-95"
@@ -1861,11 +1851,9 @@ export default function CurhatPage() {
                   </AnimatePresence>
                 </div>
 
-                {/* Zen mode */}
                 <button onClick={() => setZenMode(true)} className="w-8 h-8 rounded-xl flex items-center justify-center text-base transition-all active:scale-95"
                   style={{ background: 'var(--surface-2)', border: '1px solid var(--border-2)' }}>🧘</button>
 
-                {/* Musik dropdown (mobile) */}
                 <div className="relative">
                   <button onClick={() => { setShowAmbientDD(v => !v); setShowPersonaDD(false); setShowThemeDD(false) }}
                     className="w-8 h-8 rounded-xl flex items-center justify-center text-base transition-all active:scale-95"
@@ -1897,7 +1885,6 @@ export default function CurhatPage() {
                   </AnimatePresence>
                 </div>
 
-                {/* Theme dropdown (mobile) */}
                 <div className="relative">
                   <button onClick={() => { setShowThemeDD(v => !v); setShowPersonaDD(false); setShowAmbientDD(false) }}
                     className="w-8 h-8 rounded-xl flex items-center justify-center text-base transition-all active:scale-95"
@@ -1925,7 +1912,6 @@ export default function CurhatPage() {
                   </AnimatePresence>
                 </div>
 
-                {/* Dark mode */}
                 <button onClick={toggleTheme} className="w-8 h-8 rounded-xl flex items-center justify-center text-base transition-all active:scale-95"
                   style={{ background: 'var(--surface-2)', border: '1px solid var(--border-2)' }}>
                   {dark ? '☀️' : '🌙'}
@@ -1934,11 +1920,9 @@ export default function CurhatPage() {
             </header>
           )}
 
-          {/* ── Chat body ── */}
           <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6 sm:py-8 flex flex-col gap-5 sm:gap-6 relative" style={{ zIndex: 10 }}>
             {activeMessages.length === 0 && !pendingText && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center flex-1 gap-5 sm:gap-6 text-center py-6 sm:py-10">
-                {/* Logo hero */}
                 <div className="relative">
                   <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl flex items-center justify-center text-4xl sm:text-5xl shadow-2xl"
                     style={{ background: 'linear-gradient(135deg,#3b82f6,#ec4899)', boxShadow: '0 24px 64px rgba(59,130,246,0.3), 0 8px 24px rgba(236,72,153,0.2)' }}>🤍</div>
@@ -1946,31 +1930,28 @@ export default function CurhatPage() {
                     style={{ background: 'linear-gradient(135deg,#f59e0b,#ef4444)' }}>✨</div>
                 </div>
 
-                {/* Affirmation card */}
                 <div className="px-6 py-5 rounded-2xl max-w-[320px] sm:max-w-sm shadow-sm"
                   style={{ background: 'var(--surface)', border: '1px solid var(--border-2)', backdropFilter: 'blur(12px)' }}>
                   <span className="text-2xl block mb-2.5">{todayAffirmation.emoji}</span>
                   <p className="text-sm leading-loose font-serif" style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>"{todayAffirmation.text}"</p>
                 </div>
 
-                {/* Greeting */}
                 <div>
                   <h2 className="text-2xl sm:text-3xl font-black mb-2 tracking-tight" style={{ color: 'var(--text)' }}>
-                    Halo <span style={{ color: '#3b82f6' }}>{userName || 'Teman'}</span>, aku Kenopia
+                    {/* ── Sapaan Waktu Otomatis di Body ── */}
+                    {getGreeting()}, <span style={{ color: '#3b82f6' }}>{userName || 'Teman'}</span>
                   </h2>
                   <p className="max-w-[300px] sm:max-w-md text-sm sm:text-[15px] leading-relaxed mx-auto" style={{ color: 'var(--text-faint)' }}>
                     Ini ruang amanmu. Ceritakan apa yang sedang kamu rasakan tanpa rasa takut, tanpa penilaian.
                   </p>
                 </div>
 
-                {/* Reflection card button */}
                 <motion.button whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.95 }} onClick={handleDrawPromptCard}
                   className="px-7 py-3.5 rounded-full text-sm font-bold flex items-center gap-2"
                   style={{ background: 'var(--surface)', color: '#3b82f6', border: '2px solid rgba(59,130,246,0.25)', boxShadow: '0 6px 24px rgba(59,130,246,0.13)' }}>
                   🃏 Ambil Kartu Refleksi
                 </motion.button>
 
-                {/* Emotion starter chips */}
                 <div className="flex flex-wrap justify-center gap-2 sm:gap-2.5 mt-1 max-w-2xl px-3">
                   {Object.values(EMOTIONS).map((e, idx) => (
                     <motion.button key={e.label} 
@@ -1989,9 +1970,8 @@ export default function CurhatPage() {
             <AnimatePresence initial={false}>
               {activeMessages.map((msg, idx) => (
                 <motion.div key={msg.id} layout initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-                  <MessageBubble msg={msg} />
+                  <MessageBubble key={msg.id} msg={msg} userName={userName} persona={persona} />
                   
-                  {/* ── TOMBOL SARAN AI DINAMIS ── */}
                   {idx === activeMessages.length - 1 && !loading && !pendingText && msg.suggestions && msg.suggestions.length > 0 && (
                     <div className="flex flex-wrap justify-center gap-2 my-4 px-2">
                       {msg.suggestions.map((sug, i) => (
@@ -2026,7 +2006,6 @@ export default function CurhatPage() {
             <div ref={chatEndRef} />
           </div>
 
-          {/* ── Input Area ── */}
           <div className="flex-shrink-0 px-3 sm:px-4 md:px-6 pt-3 pb-0 safe-bottom relative" style={{ zIndex: 20 }}>
             <div className="relative z-10 max-w-4xl mx-auto">
               <AnimatePresence>
@@ -2051,7 +2030,6 @@ export default function CurhatPage() {
                 </div>
               )}
 
-              {/* Input box */}
               <div className="input-glass flex items-end gap-2 p-2 rounded-3xl"
                 style={{ background: dark ? 'rgba(9,5,30,0.7)' : 'rgba(255,255,255,0.85)', border: '1.5px solid var(--border-2)', boxShadow: '0 8px 40px rgba(0,0,0,0.07)' }}>
                 <div className="flex items-end gap-1 pb-1 pl-1 flex-shrink-0">
@@ -2098,7 +2076,6 @@ export default function CurhatPage() {
           </div>
         </main>
 
-        {/* ── Hidden export card ── */}
         <div className="fixed pointer-events-none" style={{ top: -9999, left: -9999 }}>
           <div ref={exportRef} className="w-[400px] p-10 rounded-4xl flex flex-col items-center text-center relative overflow-hidden"
             style={{ background: dark ? '#0f172a' : '#ffffff', border: `3px solid ${EMOTIONS[dominantEmotion].color}`, color: dark ? '#f8fafc' : '#0f172a' }}>
