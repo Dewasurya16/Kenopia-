@@ -6,26 +6,31 @@ const GROQ_MODEL = 'llama-3.3-70b-versatile'
 export async function POST(request: NextRequest) {
   try {
     const { history, userName = 'Teman' } = await request.json()
-    
-    if (!history || history.length === 0) {
-      return NextResponse.json({ letter: "Sepertinya kamu belum banyak bercerita. Ceritakan dulu bebanmu, agar aku dari masa depan bisa menulis surat untukmu." })
+
+    // UPGRADE: Pastikan ada minimal 3 pesan agar AI punya bahan yang cukup untuk dianalisis
+    if (!history || history.length < 3) {
+      return NextResponse.json({
+        letter: "Sepertinya kamu belum banyak bercerita. Ceritakan dulu bebanmu lebih dalam, agar aku dari masa depan punya alasan kuat untuk menulis surat ini."
+      })
     }
 
-    // PROMPT JENIUS: Memaksa LLaMA melakukan Roleplay sebagai User di Masa Depan
-    const prompt = `Baca dengan saksama riwayat curhat ini:
+    // 🔥 GOD-MODE PROMPT UNTUK SURAT MASA DEPAN 🔥
+    const prompt = `Baca dengan saksama riwayat pikiran/curhat dari dirimu di masa lalu ini:
 ${history.map((h: any) => `- ${h.userMessage}`).join('\n')}
 
-TUGASMU:
-Kamu bukan lagi AI Kenopia. Kamu adalah "${userName}" di masa depan (5 tahun dari sekarang). Kamu sudah sukses, bahagia, dan berhasil melewati SEMUA beban, stres, dan masalah yang diceritakan di atas.
+TUGAS MUTLAK:
+Kamu BUKAN lagi AI. Kamu adalah "${userName}" di masa depan (5 tahun dari sekarang). Kamu telah berevolusi, menjadi jauh lebih bijaksana, tenang, dan berhasil mengubah SEMUA beban di atas menjadi kekuatan terbesarmu.
 
-Tulislah sepucuk surat hangat, penuh air mata kebahagiaan, dan sangat personal untuk dirimu di masa lalu (dirimu yang sedang membaca surat ini). 
+Tulislah sepucuk surat untuk dirimu di masa lalu (yang sedang membaca ini). Surat ini harus terasa seperti pelukan hangat dari masa depan yang membongkar ilusi ketakutannya saat ini.
 
-ATURAN SURAT:
-1. Mulai dengan menyapa namamu sendiri (contoh: "Hai Sinar, ini aku, kamu dari masa depan...").
-2. Sebutkan secara spesifik beban yang sedang dia alami saat ini (berdasarkan riwayat di atas), lalu yakinkan dia bahwa semua itu berhasil dilewati.
-3. Gunakan bahasa Indonesia yang sangat emosional, hangat, puitis tapi tetap natural (bahasa sehari-hari, aku-kamu).
-4. Jangan pernah menyebut dirimu AI. Beraktinglah 100% sebagai dirinya dari masa depan.
-5. Panjang surat sekitar 3-4 paragraf yang melegakan hati. Tutup dengan pelukan hangat dari masa depan.`
+ATURAN SURAT (DILARANG DILANGGAR):
+1. PEMBUKAAN: Sapa dirimu sendiri dengan hangat (contoh: "Hai Sinar, ini aku dari 5 tahun di depan...").
+2. BONGKAR ILUSI MASALAH: Sebutkan spesifik masalah yang sedang dia alami (dari riwayat di atas). JANGAN cuma bilang "semua berhasil dilewati". Beritahu dia *wisdom* baru yang kamu dapatkan. Beritahu dia bahwa rasa sakit yang dia alami sekarang justru adalah proses "pembentukan" karaktermu yang paling penting.
+3. ANTI-KLISE: DILARANG KERAS menggunakan kalimat pasaran seperti "badai pasti berlalu", "tetap semangat", "jangan menyerah". Gunakan bahasa Indonesia sehari-hari (aku-kamu) yang puitis, mendalam, elegan, namun sangat natural.
+4. NO AI-ISMS: Beraktinglah 100% sebagai manusia seutuhnya. Jangan pernah sebut AI atau bot.
+5. FORMAT & PANJANG: 3-4 paragraf yang mengalir (tanpa bullet point). Tutup dengan kalimat perpisahan yang sangat melegakan dan membanggakan.
+
+Tuliskan suratnya sekarang:`
 
     const apiKey = process.env.GROQ_API_KEY
     if (!apiKey) throw new Error('API Key tidak ditemukan')
@@ -39,19 +44,19 @@ ATURAN SURAT:
       body: JSON.stringify({
         model: GROQ_MODEL,
         messages: [{ role: 'system', content: prompt }],
-        max_tokens: 600,
-        temperature: 0.85, // Temperatur tinggi untuk kreativitas emosional
+        max_tokens: 700, // Dinaikkan sedikit agar suratnya tidak terpotong jika sedang puitis
+        temperature: 0.85,
       }),
     })
 
     if (!res.ok) throw new Error('Gagal menghubungi Groq API')
 
     const data = await res.json()
-    const letterText = data.choices?.[0]?.message?.content?.trim() || "Surat dari masa depan gagal terkirim."
+    const letterText = data.choices?.[0]?.message?.content?.trim() || "Surat dari masa depan gagal terkirim melintasi waktu."
 
     return NextResponse.json({ letter: letterText })
   } catch (err) {
     console.error('[/api/futureself] Error:', err)
-    return NextResponse.json({ error: 'Gagal meracik surat.' }, { status: 500 })
+    return NextResponse.json({ error: 'Mesin waktu sedang bermasalah. Gagal meracik surat.' }, { status: 500 })
   }
 }

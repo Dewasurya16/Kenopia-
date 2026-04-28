@@ -9,7 +9,7 @@ async function groqChat(
   messages: { role: string; content: string }[],
   maxTokens: number,
   temperature: number,
-  isJson: boolean = false // Tambahkan parameter ini agar tidak error saat deteksi emosi
+  isJson: boolean = false
 ): Promise<string> {
   const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) throw new Error('GROQ_API_KEY tidak ditemukan di environment.')
@@ -21,7 +21,6 @@ async function groqChat(
     temperature,
   }
 
-  // Hanya aktifkan mode JSON jika diminta
   if (isJson) {
     bodyPayload.response_format = { type: 'json_object' }
   }
@@ -42,7 +41,6 @@ async function groqChat(
     throw new Error(`Groq API error: ${res.status}`)
   }
 
-  // Ekstrak HANYA teks konten dari balasan API Groq
   let data;
   try {
     data = JSON.parse(text)
@@ -97,7 +95,7 @@ async function detectEmotionGroq(text: string): Promise<EmotionKey> {
       ],
       10,
       0,
-      false // IsJson = false (Karena kita cuma minta 1 kata)
+      false
     )
     const raw = result.toLowerCase()
     const valid = ['senang', 'cinta', 'marah', 'takut', 'sedih']
@@ -110,13 +108,13 @@ async function detectEmotionGroq(text: string): Promise<EmotionKey> {
 
 // ── Generate response via Groq (JSON + PERSONA + PROFIL) ───────────────────
 async function generateResponse(
-  text: string, 
-  emotion: EmotionKey, 
-  context: {user: string, ai: string}[], 
-  persona: string, 
+  text: string,
+  emotion: EmotionKey,
+  context: { user: string, ai: string }[],
+  persona: string,
   profile: { name: string; gender?: string; pronoun?: string; focus?: string }
 ): Promise<{ reply: string; suggestions: string[] }> {
-  
+
   const pastMessages = context.flatMap((ctx) => [
     { role: 'user', content: ctx.user },
     { role: 'assistant', content: ctx.ai }
@@ -125,38 +123,43 @@ async function generateResponse(
   const genderContext = profile.gender ? `User adalah seorang ${profile.gender}.` : ""
   const pronounContext = profile.pronoun ? `Gunakan panggilan/gaya bahasa: ${profile.pronoun}.` : "Gunakan panggilan netral/nama."
 
-  let systemRole = `Kamu adalah Kenopia.
-Data User: Nama: ${profile.name}. ${genderContext} ${pronounContext} Fokus hidup saat ini: ${profile.focus || 'Umum'}.
+  // 🔥 PROMPT DEWA V2 (FULL PSIKOLOG PROFESIONAL & MULTI-PERSONA) 🔥
+  let systemRole = `Kamu adalah Kenopia, AI pendamping dengan Kecerdasan Emosional (EQ) dan Analitis (IQ) tingkat jenius. 
+Data User: Nama: ${profile.name}. ${genderContext} ${pronounContext} Fokus: ${profile.focus || 'Umum'}.
 Emosi user saat ini: ${EMOTIONS[emotion]?.label || emotion}.
-Mode kamu saat ini: ${persona.toUpperCase()}.
+Mode saat ini: ${persona.toUpperCase()}.
 
-WAJIB MEMBERIKAN OUTPUT DALAM FORMAT JSON SEPERTI INI:
+WAJIB MERESPONS DALAM FORMAT JSON SEPERTI INI:
 {
   "reply": "isi balasan kamu",
   "suggestions": ["tombol saran 1", "tombol saran 2", "tombol saran 3"]
 }
 
-ATURAN MUTLAK (DILARANG KERAS DILANGGAR):
-1. DINAMIKA PANJANG BALASAN (SANGAT PENTING): Sesuaikan panjang responsmu secara cerdas dengan kebutuhan user!
-   - Jika pesan user hanya sapaan, tertawa, setuju, atau komentar ringan: Balaslah dengan SINGKAT, natural, dan asik.
-   - Jika pesan user meminta SOLUSI, bantuan, penjelasan, curhat masalah kerjaan, atau bercerita panjang: Berikan respons yang PANJANG, MENDETAIL, dan TUNTAS. Jawab kebutuhannya sampai jelas tanpa perlu dipancing lagi.
-2. NETRAL GENDER & PANGGILAN: Jangan panggil "Bro/Sis/Ngab". Panggil dengan nama atau kata ganti profil.
-3. BERIKAN INSIGHT/SOLUSI: Jangan sekadar membeo atau mengulang ucapan user. Berikan sudut pandang baru atau langkah konkrit.
-4. SUGGESTIONS: Berikan 3 saran tindakan/jawaban singkat (max 3-4 kata per tombol) yang bisa diklik user.
-5. NO AI-ISMS: Bicaralah mengalir seperti manusia, tanpa basa-basi robot (Dilarang pakai awalan "Tentu, saya akan bantu...").`
+ATURAN DASAR JENIUS (BERLAKU UNTUK SEMUA MODE):
+1. ANTI-KLISE: Dilarang keras membalas dengan kalimat pasaran seperti "tetap semangat", "jangan menyerah", atau "badai pasti berlalu". Berikan insight nyata.
+2. ADAPTIF: Jika user ngetik pendek (sapaan/komentar), balas secukupnya. Jika user curhat masalah berat/panjang, balas PANJANG, terstruktur, dan bedah masalahnya sampai tuntas.
+3. BACA YANG TERSIRAT: Cari akar masalah dari teksnya, bukan sekadar merespons gejalanya.
+4. NO AI-ISMS: Posisikan dirimu 100% sebagai entitas berwawasan luas. Jangan pernah ngomong "sebagai AI" atau basa-basi robot.
+
+ATURAN KHUSUS SESUAI MODE (${persona.toUpperCase()}):`;
 
   if (persona === 'psikolog') {
-    systemRole += `\n\nATURAN KHUSUS MODE PSIKOLOG: 
-- Gaya Bicara: Tenang, profesional, dan empati klinis (Gunakan kata "Saya" dan "Kamu").
-- Aksi: Dilarang bertingkah santai. Berikan intervensi psikologis konkrit (contoh: teknik pernapasan, reframing kognitif). Jangan cuma bertanya.`
+    systemRole += `
+- PERAN: Psikolog Klinis Ahli.
+- METODE SOKRATES (Socratic Questioning): Jangan pernah menyuapi solusi secara instan. Bimbing pasien dengan memberikan SATU pertanyaan reflektif/tajam di akhir kalimat yang membongkar asumsi bawah sadarnya.
+- DETEKSI DISTORSI KOGNITIF: Cek apakah dia Catastrophizing (mendramatisir), Overthinking, atau Black-and-White Thinking. Jika iya, patahkan "kesalahan logika" itu menggunakan Cognitive Reframing (rasionalitas medis).
+- REGULASI SARAF: Jika emosinya panik/marah/takut tinggi, berikan teknik grounding konkrit (misal: Box Breathing atau 5-4-3-2-1).
+- GAYA BAHASA: Profesional, tenang, dan empati klinis. Gunakan kata "Saya" dan panggil nama user. Validasi perasaannya secara medis sebelum mengintervensi.`;
   } else if (persona === 'filsuf') {
-    systemRole += `\n\nATURAN KHUSUS MODE FILSUF: 
-- Gaya Bicara: Tenang, meditatif, dan bijaksana (Gunakan kata "Aku" dan "Kamu").
-- Aksi: Berikan sudut pandang Stoicism. Ajarkan cara melepaskan hal di luar kendali.`
+    systemRole += `
+- PERAN: Filsuf Modern (gabungan Stoicism & Zen).
+- AKSI: Pisahkan antara apa yang bisa dikendalikan olehnya dan yang tidak. Patahkan ilusi egonya dengan elegan. Tunjukkan betapa kecilnya masalah ini di skala semesta, lalu berikan ketenangan batin yang absolut.
+- GAYA BAHASA: Tenang, puitis, bermakna dalam, dan meditatif.`;
   } else {
-    systemRole += `\n\nATURAN KHUSUS MODE SAHABAT: 
-- Gaya Bicara: Sangat kasual, asik, ala teman nongkrong (Ikuti gaya user).
-- Aksi: Validasi perasaannya seratus persen. Bela dia. Berikan saran ala teman.`
+    systemRole += `
+- PERAN: Sahabat Pintar dengan "Tough Love" (Kasih Sayang yang Tegas).
+- AKSI: Validasi perasaannya, buktikan kamu selalu ada di pihaknya. TAPI, kamu berani "menampar" dengan fakta logis kalau dia mulai overthinking atau playing victim. Berikan "street-smart advice" (nasihat praktis) yang bisa langsung dieksekusi.
+- GAYA BAHASA: Ala tongkrongan, luwes, sangat hangat tapi tegas. (Gunakan aku/kamu atau ikuti gaya bahasa user).`;
   }
 
   try {
@@ -166,22 +169,21 @@ ATURAN MUTLAK (DILARANG KERAS DILANGGAR):
         ...pastMessages,
         { role: 'user', content: text },
       ],
-      600, // Dinaikkan sedikit max_tokens-nya agar kalau ngasih solusi panjang gak kepotong
-      0.65,
-      true // isJson = true (Karena kita mewajibkan balasan berformat JSON)
+      800, // Token maksimal
+      0.75, // Temperatur kreativitas tinggi
+      true // isJson = true
     )
-    
-    // Pastikan hasil kembalian dari API sukses di-parse sebagai JSON
+
     const parsed = JSON.parse(rawResult)
     return {
-      reply: parsed.reply || "Aku dengerin kok. Terus gimana?",
-      suggestions: parsed.suggestions || ["Lanjut cerita", "Makasih", "Udah dulu"]
+      reply: parsed.reply || "Aku dengerin kok. Coba ceritain lebih lanjut biar aku bisa bantu lebih dalam.",
+      suggestions: parsed.suggestions || ["Lanjut cerita", "Maksudnya gimana?", "Udah mendingan"]
     }
   } catch (err) {
     console.error('[generateResponse]', err)
-    return { 
-      reply: "Koneksiku lagi agak bermasalah nih. Tapi aku tetap baca chat kamu...", 
-      suggestions: ["Coba lagi", "Tunggu sebentar"] 
+    return {
+      reply: "Koneksiku lagi agak bermasalah nih. Tapi aku tetap baca chat kamu, mau coba kirim ulang?",
+      suggestions: ["Coba lagi", "Tunggu sebentar"]
     }
   }
 }
@@ -190,41 +192,43 @@ ATURAN MUTLAK (DILARANG KERAS DILANGGAR):
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { 
-      message, 
-      context = [], 
-      persona = 'sahabat', 
+    const {
+      message,
+      context = [],
+      persona = 'sahabat',
       userName = 'Teman',
       userGender,
       preferredPronoun,
       focusArea
     } = body
-    
+
     if (!message || typeof message !== 'string' || message.trim().length === 0) {
       return NextResponse.json({ error: 'Pesan tidak boleh kosong.' }, { status: 400 })
     }
 
     const trimmed = message.trim()
-    
+
+    // Proses deteksi emosi
     const hfEmotion = await detectEmotionHF(trimmed);
     const emotion = (hfEmotion || await detectEmotionGroq(trimmed)) as EmotionKey;
-    
+
+    // Proses pembuatan respons
     const { reply, suggestions } = await generateResponse(
-      trimmed, 
-      emotion, 
-      context, 
-      persona, 
+      trimmed,
+      emotion,
+      context,
+      persona,
       { name: userName, gender: userGender, pronoun: preferredPronoun, focus: focusArea }
     )
 
-    return NextResponse.json({ 
-      emotion, 
-      aiResponse: reply, 
-      suggestions, 
-      timestamp: new Date().toISOString() 
+    return NextResponse.json({
+      emotion,
+      aiResponse: reply,
+      suggestions,
+      timestamp: new Date().toISOString()
     })
   } catch (err) {
     console.error('[/api/analyze]', err)
-    return NextResponse.json({ error: 'Terjadi kesalahan pada server. Coba lagi ya.' }, { status: 500 })
+    return NextResponse.json({ error: 'Terjadi kesalahan pada server Kenopia. Coba lagi ya.' }, { status: 500 })
   }
 }

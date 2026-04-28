@@ -6,25 +6,29 @@ const GROQ_MODEL = 'llama-3.3-70b-versatile'
 export async function POST(request: NextRequest) {
   try {
     const { history, userName = 'Teman' } = await request.json()
-    
-    if (!history || history.length === 0) {
-      return NextResponse.json({ insight: "Belum ada riwayat curhat yang cukup untuk dianalisis. Yuk, mulai cerita!" })
+
+    // UPGRADE: Kita butuh minimal 3 riwayat biar AI punya cukup data untuk membaca "pola"
+    if (!history || history.length < 3) {
+      return NextResponse.json({ insight: "Aku butuh mendengar ceritamu sedikit lebih banyak sebelum bisa memberikan insight yang akurat. Yuk, ngobrol dulu!" })
     }
 
-    // PROMPT BARU: Lebih deep, natural, dan fokus ke "Akar Masalah" (Insight)
-    const prompt = `Kamu adalah Kenopia, AI dengan kecerdasan emosional tinggi. Pengguna yang sedang kamu analisis bernama ${userName}.
+    // 🔥 GOD-MODE PROMPT UNTUK AI INSIGHT 🔥
+    const prompt = `Kamu adalah Kenopia, Profiler Psikologis tingkat jenius. Kamu sedang menganalisis jejak pikiran bawah sadar (subconscious) dari ${userName}.
 
-Berikut adalah jejak riwayat curhatnya belakangan ini:
+Riwayat pikiran/obrolannya belakangan ini:
 ${history.map((h: any) => `- Emosi terdeteksi: ${h.emotion} | Teks: "${h.userMessage}"`).join('\n')}
 
-INSTRUKSI ANALISIS (WAJIB DIPATUHI MUTLAK):
-1. BACA BENANG MERAH: Jangan sekadar mengulang apa yang dia ketik. Analisis pola tersembunyinya. Apakah dia sedang lelah rutinitas, overthinking, merasa kesepian, atau sedang bersemangat?
-2. GAYA BAHASA NATURAL: Gunakan bahasa Indonesia sehari-hari yang santai, hangat, dan asik (gunakan aku/kamu). Jangan kaku, jangan gunakan penomoran/bullet point.
-3. STRUKTUR MENGALIR: Jangan kaku membagi jadi "Paragraf 1" dan "Paragraf 2". Rangkai kata-katamu dengan luwes.
-4. KONTEN: Validasi perasaannya secara mendalam (bikin dia merasa "Wah, Kenopia ngerti banget"). Lalu, berikan 1 perspektif baru atau saran psikologis ringan yang *mind-blowing* tapi praktis.
-5. NO AI-ISMS: Dilarang keras memakai awalan "Berdasarkan riwayat," "Sebagai AI," atau "Saya melihat pola." Langsung menyapa dan ngobrol layaknya membaca isi hatinya.
+TUGAS MUTLAK:
+Berikan satu "Deep Insight" (Terobosan Kesadaran) yang MEMBONGKAR pola emosinya. Jangan sekadar menyimpulkan "kamu sedang sedih/marah/capek". Temukan AKAR BAWAH SADAR-nya!
 
-Panjang: Sekitar 100-150 kata. Bikin se-natural mungkin.`
+ATURAN "GENIUS INSIGHT" (WAJIB DIPATUHI MUTLAK):
+1. BONGKAR KEBENARAN TERSEMBUNYI (SHADOW WORK): Apa yang sebenarnya sedang dia hindari, lindungi, atau takuti di balik kata-katanya? (Misal: Kalau dia mengeluh capek kerja, jangan-jangan sebenarnya dia bukan kelelahan fisik, melainkan merasa tidak dihargai tapi gengsi untuk mengakuinya).
+2. HANCURKAN KLISE: Dilarang keras menasihati dengan kata "tetap semangat", "badai pasti berlalu", atau "jangan menyerah". Berikan fakta psikologis atau rasionalitas yang menampar logikanya tapi merangkul batinnya.
+3. GAYA BAHASA MENTOR JENIUS: Sangat natural, tajam, dan hangat. Bicaralah seolah-olah kamu sedang duduk ngopi berdua dengannya dan menatap matanya. Gunakan "Aku/Kamu".
+4. STRUKTUR MENGALIR: Rangkai dalam 2-3 paragraf luwes. DILARANG menggunakan penomoran atau bullet points.
+5. NO AI-ISMS: Jangan pernah memulai dengan "Dari riwayatmu..." atau "Saya melihat pola...". Langsung tembak ke inti perasaannya pada kalimat pertama.
+
+Panjang: Maksimal 200 kata yang sangat padat, tajam, dan mengubah cara pandangnya.`
 
     const apiKey = process.env.GROQ_API_KEY
     if (!apiKey) {
@@ -41,13 +45,13 @@ Panjang: Sekitar 100-150 kata. Bikin se-natural mungkin.`
       body: JSON.stringify({
         model: GROQ_MODEL,
         messages: [{ role: 'system', content: prompt }],
-        max_tokens: 300,
-        temperature: 0.75, // Naikkan sedikit agar bahasanya lebih luwes dan empatik
+        max_tokens: 450, // Dinaikkan sedikit agar analisis psikologisnya tidak terpotong
+        temperature: 0.8, // Suhu optimal untuk analisis yang kreatif dan tajam
       }),
     })
 
     if (!res.ok) {
-        throw new Error('Gagal menghubungi Groq API')
+      throw new Error('Gagal menghubungi Groq API')
     }
 
     const data = await res.json()
@@ -56,6 +60,6 @@ Panjang: Sekitar 100-150 kata. Bikin se-natural mungkin.`
     return NextResponse.json({ insight: insightText })
   } catch (err) {
     console.error('[/api/insight] Error:', err)
-    return NextResponse.json({ error: 'Gagal memproses insight.' }, { status: 500 })
+    return NextResponse.json({ error: 'Gagal memproses insight bawah sadarmu.' }, { status: 500 })
   }
 }
