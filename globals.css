@@ -119,19 +119,52 @@ body {
 .bubble-user {
   background: var(--user-bubble);
   color: var(--user-text);
-  border-radius: 20px 20px 4px 20px;
+  border-radius: 24px 24px 6px 24px;
+  box-shadow: inset 0px 2px 4px rgba(255, 255, 255, 0.25), 0 8px 24px rgba(37, 99, 235, 0.15);
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 0.01em;
+}
+
+.bubble-user::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%; width: 50%; height: 100%;
+  background: linear-gradient(to right, transparent, rgba(255,255,255,0.15), transparent);
+  transform: skewX(-20deg);
+  animation: shine 8s infinite;
 }
 
 .bubble-ai {
   background: var(--ai-bubble);
   color: var(--ai-text);
-  border-radius: 20px 20px 20px 4px;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border);
+  border-radius: 24px 24px 24px 6px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.03), inset 0 0 0 1.5px var(--border);
+  position: relative;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+  letter-spacing: 0.01em;
+}
+
+.bubble-ai:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.06), inset 0 0 0 1.5px var(--accent);
 }
 
 .dark .bubble-ai {
-  border-color: var(--border);
+  background: rgba(17, 37, 64, 0.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3), inset 0 0 0 1px var(--border-2);
+}
+
+.dark .bubble-ai:hover {
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 0 0 1px var(--accent-hover);
+}
+
+@keyframes shine {
+  0% { left: -100%; }
+  20% { left: 200%; }
+  100% { left: 200%; }
 }
 
 /* ── Emotion tag ────────────────────────────────────────────────────────────── */
@@ -164,19 +197,33 @@ body {
 
 /* ── Input area ─────────────────────────────────────────────────────────────── */
 .chat-input {
-  background: var(--surface);
-  border: 1.5px solid var(--border-2);
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.03), inset 0 2px 4px rgba(255,255,255,0.4);
   color: var(--text);
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   resize: none;
+}
+.dark .chat-input {
+  background: rgba(13, 30, 51, 0.6);
+  border: 1px solid rgba(56, 189, 248, 0.15);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2), inset 0 2px 4px rgba(255,255,255,0.02);
 }
 .chat-input:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-soft);
+  box-shadow: 0 8px 32px rgba(37,99,235,0.15), inset 0 0 0 1px var(--accent);
+  transform: translateY(-2px);
+}
+.dark .chat-input:focus {
+  border-color: var(--accent-hover);
+  box-shadow: 0 8px 32px rgba(14,165,233,0.2), inset 0 0 0 1px var(--accent-hover);
 }
 .chat-input::placeholder {
   color: var(--text-faint);
+  font-weight: 500;
 }
 
 /* ── Noise grain overlay ────────────────────────────────────────────────────── */

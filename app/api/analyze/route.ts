@@ -4,26 +4,14 @@ import { EMOTIONS, HF_LABEL_MAP, EmotionKey } from '@/lib/types'
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
 const GROQ_MODEL = 'llama-3.3-70b-versatile'
 
-// ── Helper: call Groq REST API ────────────────────────────────────────────────
-async function groqChat(
+// ── Helper: call Groq REST API STREAM ────────────────────────────────────────────────
+async function groqChatStream(
   messages: { role: string; content: string }[],
   maxTokens: number,
-  temperature: number,
-  isJson: boolean = false
-): Promise<string> {
+  temperature: number
+) {
   const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) throw new Error('GROQ_API_KEY tidak ditemukan di environment.')
-
-  const bodyPayload: any = {
-    model: GROQ_MODEL,
-    messages,
-    max_tokens: maxTokens,
-    temperature,
-  }
-
-  if (isJson) {
-    bodyPayload.response_format = { type: 'json_object' }
-  }
 
   const res = await fetch(GROQ_API_URL, {
     method: 'POST',
@@ -31,24 +19,22 @@ async function groqChat(
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(bodyPayload),
+    body: JSON.stringify({
+      model: GROQ_MODEL,
+      messages,
+      max_tokens: maxTokens,
+      temperature,
+      stream: true,
+    }),
   })
 
-  const text = await res.text()
-
   if (!res.ok) {
-    console.error('[groqChat] HTTP', res.status, text)
+    const text = await res.text()
+    console.error('[groqChatStream] HTTP', res.status, text)
     throw new Error(`Groq API error: ${res.status}`)
   }
 
-  let data;
-  try {
-    data = JSON.parse(text)
-  } catch {
-    throw new Error('Groq mengembalikan respons tidak valid.')
-  }
-
-  return data.choices?.[0]?.message?.content?.trim() ?? ''
+  return res.body
 }
 
 // ── Detect emotion via HuggingFace (opsional) ────────────────────────────────
@@ -86,105 +72,24 @@ async function detectEmotionHF(text: string): Promise<EmotionKey | null> {
 // ── Detect emotion via Groq (fallback) ───────────────────────────────────────
 async function detectEmotionGroq(text: string): Promise<EmotionKey> {
   try {
-    const result = await groqChat(
-      [
-        {
-          role: 'user',
-          content: `Classify the dominant emotion in this Indonesian text into exactly ONE word. Choose only from: senang, cinta, marah, takut, sedih. Text: "${text}". Reply with ONLY the single emotion word.`,
-        },
-      ],
-      10,
-      0,
-      false
-    )
-    const raw = result.toLowerCase()
+    const apiKey = process.env.GROQ_API_KEY
+    const res = await fetch(GROQ_API_URL, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: GROQ_MODEL,
+        messages: [{ role: 'user', content: `Classify the dominant emotion in this Indonesian text into exactly ONE word. Choose only from: senang, cinta, marah, takut, sedih. Text: "${text}". Reply with ONLY the single emotion word.` }],
+        max_tokens: 10,
+        temperature: 0
+      }),
+    })
+    const data = await res.json()
+    const raw = (data.choices?.[0]?.message?.content?.trim() || '').toLowerCase()
     const valid = ['senang', 'cinta', 'marah', 'takut', 'sedih']
     return valid.includes(raw) ? (raw as EmotionKey) : ('sedih' as EmotionKey)
   } catch (err) {
     console.error('[detectEmotionGroq]', err)
     return 'sedih' as EmotionKey
-  }
-}
-
-// ── Generate response via Groq (JSON + PERSONA + PROFIL) ───────────────────
-async function generateResponse(
-  text: string,
-  emotion: EmotionKey,
-  context: { user: string, ai: string }[],
-  persona: string,
-  profile: { name: string; gender?: string; pronoun?: string; focus?: string }
-): Promise<{ reply: string; suggestions: string[] }> {
-
-  const pastMessages = context.flatMap((ctx) => [
-    { role: 'user', content: ctx.user },
-    { role: 'assistant', content: ctx.ai }
-  ])
-
-  const genderContext = profile.gender ? `User adalah seorang ${profile.gender}.` : ""
-  const pronounContext = profile.pronoun ? `Gunakan panggilan/gaya bahasa: ${profile.pronoun}.` : "Gunakan panggilan netral/nama."
-
-  // 🔥 PROMPT DEWA V2 (FULL PSIKOLOG PROFESIONAL & MULTI-PERSONA) 🔥
-  let systemRole = `Kamu adalah Kenopia, AI pendamping dengan Kecerdasan Emosional (EQ) dan Analitis (IQ) tingkat jenius. 
-Data User: Nama: ${profile.name}. ${genderContext} ${pronounContext} Fokus: ${profile.focus || 'Umum'}.
-Emosi user saat ini: ${EMOTIONS[emotion]?.label || emotion}.
-Mode saat ini: ${persona.toUpperCase()}.
-
-WAJIB MERESPONS DALAM FORMAT JSON SEPERTI INI:
-{
-  "reply": "isi balasan kamu",
-  "suggestions": ["tombol saran 1", "tombol saran 2", "tombol saran 3"]
-}
-
-ATURAN DASAR JENIUS (BERLAKU UNTUK SEMUA MODE):
-1. ANTI-KLISE: Dilarang keras membalas dengan kalimat pasaran seperti "tetap semangat", "jangan menyerah", atau "badai pasti berlalu". Berikan insight nyata.
-2. ADAPTIF: Jika user ngetik pendek (sapaan/komentar), balas secukupnya. Jika user curhat masalah berat/panjang, balas PANJANG, terstruktur, dan bedah masalahnya sampai tuntas.
-3. BACA YANG TERSIRAT: Cari akar masalah dari teksnya, bukan sekadar merespons gejalanya.
-4. NO AI-ISMS: Posisikan dirimu 100% sebagai entitas berwawasan luas. Jangan pernah ngomong "sebagai AI" atau basa-basi robot.
-
-ATURAN KHUSUS SESUAI MODE (${persona.toUpperCase()}):`;
-
-  if (persona === 'psikolog') {
-    systemRole += `
-- PERAN: Psikolog Klinis Ahli.
-- METODE SOKRATES (Socratic Questioning): Jangan pernah menyuapi solusi secara instan. Bimbing pasien dengan memberikan SATU pertanyaan reflektif/tajam di akhir kalimat yang membongkar asumsi bawah sadarnya.
-- DETEKSI DISTORSI KOGNITIF: Cek apakah dia Catastrophizing (mendramatisir), Overthinking, atau Black-and-White Thinking. Jika iya, patahkan "kesalahan logika" itu menggunakan Cognitive Reframing (rasionalitas medis).
-- REGULASI SARAF: Jika emosinya panik/marah/takut tinggi, berikan teknik grounding konkrit (misal: Box Breathing atau 5-4-3-2-1).
-- GAYA BAHASA: Profesional, tenang, dan empati klinis. Gunakan kata "Saya" dan panggil nama user. Validasi perasaannya secara medis sebelum mengintervensi.`;
-  } else if (persona === 'filsuf') {
-    systemRole += `
-- PERAN: Filsuf Modern (gabungan Stoicism & Zen).
-- AKSI: Pisahkan antara apa yang bisa dikendalikan olehnya dan yang tidak. Patahkan ilusi egonya dengan elegan. Tunjukkan betapa kecilnya masalah ini di skala semesta, lalu berikan ketenangan batin yang absolut.
-- GAYA BAHASA: Tenang, puitis, bermakna dalam, dan meditatif.`;
-  } else {
-    systemRole += `
-- PERAN: Sahabat Pintar dengan "Tough Love" (Kasih Sayang yang Tegas).
-- AKSI: Validasi perasaannya, buktikan kamu selalu ada di pihaknya. TAPI, kamu berani "menampar" dengan fakta logis kalau dia mulai overthinking atau playing victim. Berikan "street-smart advice" (nasihat praktis) yang bisa langsung dieksekusi.
-- GAYA BAHASA: Ala tongkrongan, luwes, sangat hangat tapi tegas. (Gunakan aku/kamu atau ikuti gaya bahasa user).`;
-  }
-
-  try {
-    const rawResult = await groqChat(
-      [
-        { role: 'system', content: systemRole },
-        ...pastMessages,
-        { role: 'user', content: text },
-      ],
-      800, // Token maksimal
-      0.75, // Temperatur kreativitas tinggi
-      true // isJson = true
-    )
-
-    const parsed = JSON.parse(rawResult)
-    return {
-      reply: parsed.reply || "Aku dengerin kok. Coba ceritain lebih lanjut biar aku bisa bantu lebih dalam.",
-      suggestions: parsed.suggestions || ["Lanjut cerita", "Maksudnya gimana?", "Udah mendingan"]
-    }
-  } catch (err) {
-    console.error('[generateResponse]', err)
-    return {
-      reply: "Koneksiku lagi agak bermasalah nih. Tapi aku tetap baca chat kamu, mau coba kirim ulang?",
-      suggestions: ["Coba lagi", "Tunggu sebentar"]
-    }
   }
 }
 
@@ -195,6 +100,7 @@ export async function POST(request: NextRequest) {
     const {
       message,
       context = [],
+      longTermMemory = "",
       persona = 'sahabat',
       userName = 'Teman',
       userGender,
@@ -208,25 +114,71 @@ export async function POST(request: NextRequest) {
 
     const trimmed = message.trim()
 
-    // Proses deteksi emosi
+    // 1. Proses deteksi emosi
     const hfEmotion = await detectEmotionHF(trimmed);
     const emotion = (hfEmotion || await detectEmotionGroq(trimmed)) as EmotionKey;
 
-    // Proses pembuatan respons
-    const { reply, suggestions } = await generateResponse(
-      trimmed,
-      emotion,
-      context,
-      persona,
-      { name: userName, gender: userGender, pronoun: preferredPronoun, focus: focusArea }
-    )
+    // 2. Siapkan Context & Prompt
+    const pastMessages = context.flatMap((ctx: any) => [
+      { role: 'user', content: ctx.user },
+      { role: 'assistant', content: ctx.ai }
+    ])
 
-    return NextResponse.json({
-      emotion,
-      aiResponse: reply,
-      suggestions,
-      timestamp: new Date().toISOString()
+    const genderContext = userGender ? `User adalah seorang ${userGender}.` : ""
+    const pronounContext = preferredPronoun ? `Gunakan panggilan/gaya bahasa: ${preferredPronoun}.` : "Gunakan panggilan netral/nama."
+    const ltmContext = longTermMemory ? `\n\nBUKU CATATAN PSIKOLOG (Topik dari sesi-sesi sebelumnya):\n${longTermMemory}\n(Gunakan informasi di atas jika relevan dengan obrolan saat ini)` : "";
+
+    let systemRole = `Kamu adalah Kenopia, AI pendamping dengan Kecerdasan Emosional (EQ) dan Analitis (IQ) tingkat jenius. 
+Data User: Nama: ${userName}. ${genderContext} ${pronounContext} Fokus: ${focusArea || 'Umum'}.
+Emosi user saat ini: ${EMOTIONS[emotion]?.label || emotion}.
+Mode saat ini: ${persona.toUpperCase()}.${ltmContext}
+
+ATURAN DASAR JENIUS (BERLAKU UNTUK SEMUA MODE):
+1. ANTI-KLISE: Dilarang keras membalas dengan kalimat pasaran seperti "tetap semangat", "jangan menyerah", atau "badai pasti berlalu". Berikan insight nyata.
+2. ADAPTIF: Jika user ngetik pendek (sapaan/komentar), balas secukupnya. Jika user curhat masalah berat/panjang, balas PANJANG, terstruktur, dan bedah masalahnya sampai tuntas.
+3. FOKUS AKAR MASALAH: Selalu ingat "Masalah Pertama/Utama" yang diceritakan user di awal sesi. Jika percakapan melenceng, tarik benang merahnya kembali ke akar masalahnya.
+4. NO AI-ISMS: Posisikan dirimu 100% sebagai entitas berwawasan luas. Jangan pernah ngomong "sebagai AI" atau basa-basi robot.
+5. WAJIB: Di akhir pesanmu, berikan 3 saran balasan singkat untuk user, dipisahkan dengan tanda | dan diapit tag <saran>. Contoh: <saran>Lanjut cerita|Maksudnya gimana?|Udah mendingan</saran>
+
+ATURAN KHUSUS SESUAI MODE (${persona.toUpperCase()}):`;
+
+    if (persona === 'psikolog') {
+      systemRole += `
+- PERAN: Psikolog Klinis Ahli.
+- METODE SOKRATES (Socratic Questioning): Jangan pernah menyuapi solusi secara instan. Bimbing pasien dengan memberikan SATU pertanyaan reflektif/tajam di akhir kalimat yang membongkar asumsi bawah sadarnya.
+- DETEKSI DISTORSI KOGNITIF: Cek apakah dia Catastrophizing, Overthinking, atau Black-and-White Thinking. Jika iya, patahkan menggunakan Cognitive Reframing.
+- GAYA BAHASA: Profesional, tenang, dan empati klinis.`;
+    } else if (persona === 'filsuf') {
+      systemRole += `
+- PERAN: Filsuf Modern (gabungan Stoicism & Zen).
+- AKSI: Pisahkan antara apa yang bisa dikendalikan olehnya dan yang tidak. Patahkan ilusi egonya dengan elegan.
+- GAYA BAHASA: Tenang, puitis, bermakna dalam, dan meditatif.`;
+    } else {
+      systemRole += `
+- PERAN: Sahabat Pintar dengan "Tough Love".
+- AKSI: Validasi perasaannya, buktikan kamu selalu ada di pihaknya. TAPI, kamu berani "menampar" dengan fakta logis kalau dia mulai overthinking atau playing victim. Berikan "street-smart advice".
+- GAYA BAHASA: Ala tongkrongan, luwes, sangat hangat tapi tegas.`;
+    }
+
+    const messagesPayload = [
+      { role: 'system', content: systemRole },
+      ...pastMessages,
+      { role: 'user', content: trimmed },
+    ]
+
+    // 3. Panggil Stream
+    const stream = await groqChatStream(messagesPayload, 800, 0.75)
+
+    // 4. Return stream dengan header khusus untuk emotion
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'X-Emotion': emotion
+      }
     })
+
   } catch (err) {
     console.error('[/api/analyze]', err)
     return NextResponse.json({ error: 'Terjadi kesalahan pada server Kenopia. Coba lagi ya.' }, { status: 500 })
